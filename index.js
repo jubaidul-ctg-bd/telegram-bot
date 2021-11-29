@@ -95,7 +95,7 @@ const checkBalance = async (walletKey, type) => {
         const result = await contract.methods.balanceOf(mainWallet).call() // 29803630997051883414242659
 
         const format = web3.utils.fromWei(result) // 29803630.997051883414242659
-        console.log("formate",format)
+        console.log("formate", format)
         return format
 
     }
@@ -129,18 +129,31 @@ const init = async () => {
                 let count
                 let text
                 let flag = 0
-                if(!req.body.text){
-                    
-                    console.log("HERE TEXT CANT!!!!!!!!!!!!!!!",req.body)
-                    req.body.message.text = "Available comamnd  \n" +
-                    "/all - show all available commands \n" +
-                    "/connect - connect to metaMask Wallet \n" +
-                    "/walletAddress# - check your wallet BNB balance Example 0x885943c5c8cf505a05b960e1d13052d0f033952e#\n" +
-                    "/transactionhash## - check transaction status\n" +
-                    "/walletAddress### - balance check example\n"
-                }
 
-                if (!req.body.my_chat_member && req.body.message.text) {
+
+                let stageOneGroupUrl = "https://t.me/+6rwSQ_waN403YTk1"
+                let stageOneGroupName = "mytest"
+
+                if (!req.body.my_chat_member && req.body.message.text && req.body.message.chat.title == stageOneGroupName) {
+                    console.log("Initialized")
+                    chatId = req.body.message.chat.id
+                    initialTest =
+                        "Available comamnd  \n" +
+                        "/all - show all available commands \n" +
+                        "/walletAddress# - claim your tokens Example /0x885943c5c8cf505a05b960e1d13052d0f033952e##\n" +
+                        "/walletAddress## - claim your giftBox Example /0x885943c5c8cf505a05b960e1d13052d0f033952e##\n"
+
+
+
+                    // console.log("REQ.BODY.message", req.body.message)
+                    text = req.body.message.text.toLowerCase()
+
+                    temp = req.body.message.text
+                    count = (temp.match(/#/g) || []).length;
+                    console.log(count);
+
+                }
+                else if (!req.body.my_chat_member && req.body.message.text) {
                     console.log("Initialized")
                     chatId = req.body.message.chat.id
                     initialTest =
@@ -160,6 +173,28 @@ const init = async () => {
                     console.log(count);
 
                 }
+                else if (!req.body.text && !req.body.my_chat_member) {
+
+                    console.log("HERE TEXT CANT!!!!!!!!!!!!!!!", req.body)
+                    req.body.message.text = "Available comamnd  \n" +
+                        "/all - show all available commands \n" +
+                        "/connect - connect to metaMask Wallet \n" +
+                        "/walletAddress# - check your wallet BNB balance Example 0x885943c5c8cf505a05b960e1d13052d0f033952e#\n" +
+                        "/transactionhash## - check transaction status\n" +
+                        "/walletAddress### - balance check example\n"
+                }
+                else if (!req.body.my_chat_member) {
+
+                    console.log("HERE TEXT CANT", req.body)
+                    req.body.my_chat_member.text = "Available comamnd  \n" +
+                        "/all - show all available commands \n" +
+                        "/connect - connect to metaMask Wallet \n" +
+                        "/walletAddress# - check your wallet BNB balance Example 0x885943c5c8cf505a05b960e1d13052d0f033952e#\n" +
+                        "/transactionhash## - check transaction status\n" +
+                        "/walletAddress### - balance check example\n"
+                    console.log("!!!!!!!!!!!!!!!", req.body)
+                }
+
 
 
 
@@ -190,6 +225,70 @@ const init = async () => {
                         text: "https://metamask.io/download.html"
                     })
                 }
+                //check user exist in the database or not for claming token
+                else if (count == 1 && req.body.message.chat.title == stageOneGroupName) {
+                    let walletKey = req.body.message.text.slice(1, -1)
+
+                    const numberCheckingQry = `SELECT user_id, password FROM user WHERE contact_number LIKE '${value.contact_number}';`;
+                    conn.query(numberCheckingQry, (err, result) => {
+                        if (err) {
+                            return res.status(501).json({
+                                msg: "Number checking error",
+                                error: err.message
+                            })
+                        }
+
+                        if (result.length < 1) {
+                            return res.status(404).json({
+                                msg: "User not found",
+                                error: "User not found"
+                            })
+                        }
+
+
+                    })
+
+
+
+
+
+                    console.log("walletKey", walletKey)
+                    await checkBalance(walletKey, 2).then(async (res) => {
+                        await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                            chat_id: chatId,
+                            text: `Your account BNB Balance is ${res}`
+                        })
+                    }).catch(async (error) => {
+                        console.log("BALANCE EROR", error)
+                        await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                            chat_id: chatId,
+                            text: `Invalid Wallet Address`
+                        })
+                    })
+                }
+                //checking user exist in the database or not for claming gift-box
+                else if (count == 2 && req.body.message.chat.title == stageOneGroupName) {
+                    let walletKey = req.body.message.text.slice(1, -1)
+                    console.log("walletKey", walletKey)
+
+
+
+
+
+
+                    await checkBalance(walletKey, 2).then(async (res) => {
+                        await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                            chat_id: chatId,
+                            text: `Your account BNB Balance is ${res}`
+                        })
+                    }).catch(async (error) => {
+                        console.log("BALANCE EROR", error)
+                        await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                            chat_id: chatId,
+                            text: `Invalid Wallet Address`
+                        })
+                    })
+                }
                 else if (count == 1) {
                     let walletKey = req.body.message.text.slice(1, -1)
                     console.log("walletKey", walletKey)
@@ -212,7 +311,7 @@ const init = async () => {
                     let currentBalance
                     console.log("Working")
                     //checking previous balance
-                    await checkBalance("empty",3).then(async (res) => {
+                    await checkBalance("empty", 3).then(async (res) => {
                         currentBalance = res
                         if (res) {
                             await axios.get(`https://api.etherscan.io/api?module=proxy&action=eth_getTransactionByHash&txhash=${trxHash}&apikey=CDWRF4K5C8NC3YZK7K69MZDSRVXHTFE4WB`, {
@@ -222,59 +321,67 @@ const init = async () => {
                                 // console.log("value", value)
                                 if (res.data) {
                                     msg = "Transaction was successful"
-                                    await checkBalance("empty",3).then(async ( res ) => {
+                                    await checkBalance("empty", 3).then(async (res) => {
                                         let tokenAmount = (res - currentBalance)
-                                        if(tokenAmount == 0){
+                                        if (tokenAmount == 0) {
                                             console.log("tokenAmount", tokenAmount)
                                             let account = await web3.eth.accounts.create()
                                             console.log("tokenAmount", account)
 
-                                            let signupQry = "INSERT INTO user (user_id, first_name, last_name, gender, contact_number, address, password) VALUES (?);";
-                                            let signupValues = [null, value.first_name, value.last_name, value.gender, value.contact_number, value.address, value.password];
+                                            let signupQry = "INSERT INTO user (id, walletAddress, privateKey, amount) VALUES (?);";
+                                            let signupValues = [null, account.address, account.privateKey, tokenAmount];
 
 
-                                            conn.query(signupQry, [signupValues], (err, result, fields) => {
+                                            conn.query(signupQry, [signupValues], async (err, result, fields) => {
                                                 if (err) {
-                                                    return res.status(501).json({
-                                                        msg: "User info fail to insert in database",
-                                                        error: err.message,
-                                                    });
+                                                    await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                                                        chat_id: chatId,
+                                                        text: "Server is busy try again..."
+                                                    })
                                                 }
-                                
-                                                return res.status(200).json({
-                                                    msg: 'Registration success',
-                                                    data: {
-                                                        user_id: result.insertId
-                                                    }
-                                                });
+
+                                                if (result) {
+                                                    await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                                                        chat_id: chatId,
+                                                        text: `${msg}\n Check we have inbox you further details`
+                                                    })
+                                                    await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                                                        chat_id: req.body.message.from.id,
+                                                        text: `${msg}\nYour wallet address is ${account.address}\nDon't share it with anyone.\nJoin here ${stageOneGroupUrl} and claim your token and gift-box`
+                                                    })
+                                                }
+
+                                                // return res.status(200).json({
+                                                //     msg: 'Registration success',
+                                                //     data: {
+                                                //         user_id: result.insertId
+                                                //     }
+                                                // });
                                             })
 
                                         }
-                                        if(tokenAmount == .5){
-                                            await web3.eth.accounts.create().then(res=>{
-                                                    console.log("res",res)
-                                                }
-                                            )
-                                        }
-                                        else if(tokenAmount == 1){
+                                        // if(tokenAmount == .5){
+                                        //     await web3.eth.accounts.create().then(res=>{
+                                        //             console.log("res",res)
+                                        //         }
+                                        //     )
+                                        // }
+                                        // else if(tokenAmount == 1){
 
-                                        }
-                                        else if (tokenAmount== 2){
+                                        // }
+                                        // else if (tokenAmount== 2){
 
-                                        }
-                                        
+                                        // }
+
                                     })
 
-                                    await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                                        chat_id: chatId,
-                                        text: msg
-                                    })
+
 
                                 }
                             })
                         }
                     }).catch(async (error) => {
-                        console.log("error",error)
+                        console.log("error", error)
                         await axios.post(`${TELEGRAM_API}/sendMessage`, {
                             chat_id: chatId,
                             text: "Invalid Transaction Hash Number"
@@ -283,13 +390,18 @@ const init = async () => {
 
 
                 }
+                // receving unknown msg 
                 else {
-                    console.log("ELSE=======",req.body)
+                    console.log("ELSE=======GROUP", req.body)
+
+                    // if( req.body.message.chat.title == "mytest"){
+
+                    // }
                     await axios.post(`${TELEGRAM_API}/sendMessage`, {
                         chat_id: chatId,
                         text: initialTest
-                    }).catch(e=>{
-                        console.log("+++++",e);
+                    }).catch(e => {
+                        console.log("+++++", e);
                     })
                 }
                 return res.send()
