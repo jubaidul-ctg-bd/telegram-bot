@@ -1,0 +1,30 @@
+{
+  "name": "agoratest",
+  "version": "1.0.0",
+  "description": "testing agora video calling",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "agora-access-token": "^2.0.4",
+    "agora-rtc-sdk-ng": "^4.7.2",
+    "axios": "^0.24.0",
+    "crypto-js": "^4.1.1",
+    "dotenv": "^10.0.0",
+    "encodeurl": "^1.0.2",
+    "ethereumjs-testrpc": "^6.0.3",
+    "express": "^4.17.1",
+    "express-validator": "^6.10.0",
+    "ganache-cli": "^6.12.2",
+    "mysql": "^2.18.1",
+    "mysql2": "^2.3.3",
+    "nodemon": "^2.0.15",
+    "sequelize": "^6.5.0",
+    "urlencode": "^1.1.0",
+    "web3": "^1.6.1"
+  }
+}
