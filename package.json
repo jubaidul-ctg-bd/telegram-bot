@@ -13,6 +13,7 @@
     "agora-access-token": "^2.0.4",
     "agora-rtc-sdk-ng": "^4.7.2",
     "axios": "^0.24.0",
+    "bchaddrjs": "^0.5.2",
     "crypto-js": "^4.1.1",
     "dotenv": "^10.0.0",
     "encodeurl": "^1.0.2",

@@ -4,6 +4,9 @@ const axios = require('axios')
 const bodyParser = require('body-parser')
 const BNBContractABI = require('./contactsABI/BNBabi.json')
 
+const { getBalance } = require('./myLib/cryptoBalance')
+const { getTokenBalance } = require('./myLib/cryptoTokenAmount')
+
 const conn = require('./config/db_conn');
 
 const Web3 = require("web3");
@@ -113,6 +116,11 @@ const TELEGRAM_API = `https://api.telegram.org/bot${TOKEN}`
 const URI = `/webhook/${TOKEN}`
 const WEBHOOK_URL = SERVER_URL + URI
 
+getBalance("LTC","LcFFkbRUrr8j7TMi8oXUnfR4GPsgcXDepo")
+.then(res=>{
+    console.log("res",res);
+})
+         
 
 
 const init = async () => {
@@ -122,6 +130,7 @@ const init = async () => {
                 console.log("req.body", req.body)
 
 
+                
 
                 let chatId
                 let initialTest
