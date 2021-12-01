@@ -126,6 +126,7 @@ getBalance("LTC","LcFFkbRUrr8j7TMi8oXUnfR4GPsgcXDepo")
 const init = async () => {
     const res = await axios.get(`${TELEGRAM_API}/setWebhook?url=${WEBHOOK_URL}`).then(
         res => {
+            console.log("response===========",res)
             app.post(URI, async (req, res) => {
                 console.log("req.body", req.body)
 
