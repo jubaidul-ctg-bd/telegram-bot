@@ -1,113 +1,54 @@
-let EthTx = require('ethereumjs-tx');
+// Helper script that sends ONLYONE token to target addresses specified in targets.txt
+// Target index - index in targets.txt file is specified as an argument - process.argv.splice(2)[0]
 
+var fs = require('fs')
 
+var targetAccounts = JSON.parse(fs.readFileSync('targets.txt', 'utf-8'));
 
-class Ethtransfer {
+var myAddress = JSON.parse(fs.readFileSync("my-address.json", 'utf-8'));
+var targetIndex = Number(process.argv.splice(2)[0]);
 
-    send(fromAddress,pKey,toAddress,sendAmount,withFee=0,network){
-        console.log("withFee",withFee)
-        console.log("withFee",withFee)
-        return new Promise((resolve,reject)=>{
-            let web3 = require('web3');
+console.log(`Sending ONLYONE to target ${targetIndex}.`);
 
-            if(network == 'testnet'){
-                web3 = new web3(new web3.providers.HttpProvider("https://rinkeby.infura.io/v3/15851454d7644cff846b1b8701403647"));
-            }else{
-                web3 = new web3(new web3.providers.HttpProvider("https://mainnet.infura.io/v3/15851454d7644cff846b1b8701403647"));
-            }
+async function sendOnlyone(fromAddress, toAddress) {
 
-            if(pKey.length==66){
-                pKey = pKey.substr(2, pKey.length);
-            }
+    var Tx = require('ethereumjs-tx').Transaction;
+    var Web3 = require('web3');
+    var web3 = new Web3(new Web3.providers.HttpProvider('https://bsc-dataseed.binance.org/'));
 
-            let fromPkeyB =Buffer.from(pKey,'hex');
+    var amount = web3.utils.toHex(10);
+    var privateKey = Buffer.from(myAddress.privateKey, 'hex');
+    var abiArray = JSON.parse(JSON.parse(fs.readFileSync('onlyone-abi.json','utf-8')));
+    var contractAddress = '0xb899db682e6d6164d885ff67c1e676141deaaa40'; // ONLYONE address
+    var contract = new web3.eth.Contract(abiArray, contractAddress, {from: fromAddress});
+    var Common = require('ethereumjs-common').default;
+    var BSC_FORK = Common.forCustomChain(
+        'mainnet',
+        {
+        name: 'Binance Smart Chain Mainnet',
+        networkId: 56,
+        chainId: 56,
+        url: 'https://bsc-dataseed.binance.org/'
+        },
+        'istanbul',
+    );
 
-            //Get Nonce for sending amount
+    var count = await web3.eth.getTransactionCount(myAddress);
 
-            web3.eth.getTransactionCount(fromAddress).then(function(nonce){
-                var EthAmount = parseInt(web3.utils.toWei(`${sendAmount}`));
+    var rawTransaction = {
+        "from":myAddress,
+        "gasPrice":web3.utils.toHex(5000000000),
+        "gasLimit":web3.utils.toHex(210000),
+        "to":contractAddress,"value":"0x0",
+        "data":contract.methods.transfer(toAddress, amount).encodeABI(),
+        "nonce":web3.utils.toHex(count)
+    };
 
-                web3.eth.getBalance(fromAddress,(err,balance)=>{
+    var transaction = new Tx(rawTransaction, {'common':BSC_FORK});
+    transaction.sign(privateKey)
 
-                    if (err) {
-                        response.error = 1;
-                        response.error_code = 540;
-                        response.message = 'Something went wrong to get balance of sender(ETH)!';
-                        reject(response);
-                        return false;
-                        // Handle errors...
-                    }else{
-                        //if balance is available
-                        web3.eth.getGasPrice()
-                            .then((gasPrice)=>{
-
-                                const gasLimit = 21000;
-                                let fee = gasLimit*gasPrice;
-
-                                if(withFee==1){
-                                    EthAmount = EthAmount-fee;
-                                }
-
-                                response.fee = web3.utils.fromWei(`${fee}`);
-
-                                if(parseInt(balance)<EthAmount+fee || balance == 0){
-
-                                    response.error = 1;
-                                    response.error_code = 540;
-                                    response.message = 'Insufficient balance of sender(ETH)!';
-                                    reject(response);
-                                    return false;
-                                }else{
-                                    let rawTx = {
-                                        nonce: web3.utils.toHex(nonce),
-                                        from:fromAddress,
-                                        to: toAddress,
-                                        value:web3.utils.toHex(EthAmount),
-                                        gasLimit:web3.utils.toHex(gasLimit),
-                                        gasPrice:web3.utils.toHex(gasPrice)
-                                    };
-
-                                    if(network=='testnet'){
-                                        rawTx.chainId = web3.utils.toHex(4); //4=rinkeby 42=kovan 1=main
-                                    }
-
-                                    let tx = new EthTx(rawTx);
-
-                                    tx.sign(fromPkeyB);
-
-                                    const serializeTx = `0x${tx.serialize().toString('hex')}`;
-
-                                    web3.eth.sendSignedTransaction(serializeTx,(err,res)=>{
-                                        if(err){
-                                            console.log(err);
-                                            response.error = 1;
-                                            response.error_code = 540;
-                                            response.message = 'Private key does not match or network error at broadcasting ETH';
-                                            reject(response);
-                                            return false;
-                                        }else{
-                                            response.error = 0;
-                                            response.message = 'ETH has transferred Successfully';
-                                            response.txId = res;
-                                            resolve(response);
-
-                                        }
-                                    });
-                                }
-
-                            }); //getGasPrice
-                    }
-
-                });//getBalance for checking availability
-            }).catch(err=>{
-                response.error = 1;
-                response.error_code = 540;
-                response.message = 'Nonce not found at sending ETH!';
-                reject(response);
-            });
-        })
-
-    }
+    var result = await web3.eth.sendSignedTransaction('0x' + transaction.serialize().toString('hex'));
+    return result;
 }
 
-module.exports = new Ethtransfer;
+module.exports = sendOnlyone(myAddress, targetAccounts[targetIndex]);

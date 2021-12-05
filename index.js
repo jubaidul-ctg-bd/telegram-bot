@@ -34,9 +34,9 @@ const provierUrl = process.env.PROVIER_URL || "http://127.0.0.1:3000"
 //       chainId: 97 // Smart Chain - Testnet chain id
 //     }
 // let web3 = new Web3(provierUrl);
-let web3 = new Web3(new Web3.providers.HttpProvider("https://mainnet.infura.io/v3/9e81cde3134f40019b152fafe6d2f265"));
+// let web3 = new Web3(new Web3.providers.HttpProvider("https://mainnet.infura.io/v3/9e81cde3134f40019b152fafe6d2f265"));
 // let web3 = new Web3(new Web3.providers.HttpProvider("https://data-seed-prebsc-1-s1.binance.org:8545"));
-// let web3 = new Web3(new Web3.providers.HttpProvider("https://rinkeby.infura.io/v3/9e81cde3134f40019b152fafe6d2f265"));
+let web3 = new Web3(new Web3.providers.HttpProvider("https://rinkeby.infura.io/v3/9e81cde3134f40019b152fafe6d2f265"));
 // let web3 = new Web3(new Web3.providers.HttpProvider(BSCOptions));
 // const web3 = new Fortmatic('YOUR_TEST_API_KEY', BSCOptions);
 
@@ -137,6 +137,35 @@ const WEBHOOK_URL = SERVER_URL + URI
 // })
 
 
+let btcPrice
+let bnbPrice
+let ltcPrice
+let ethPrice
+async function tokenPrice(){
+    await axios.get(`https://betconix.com/api/v2/tickers`)
+    .then(result => {
+        // console.log("result===",result.)
+        result.data.map(eleme=>{
+            if(eleme.ticker_id=='BTC_USD'){
+                btcPrice = eleme.last_price
+            }
+            else if(eleme.ticker_id=='LTC_USD'){
+                ltcPrice = eleme.last_price
+            }
+            else if(eleme.ticker_id=='ETH_USD'){
+                ethPrice = eleme.last_price
+            }
+            else if(eleme.ticker_id=='BNB_USD'){
+                bnbPrice = eleme.last_price
+                console.log(bnbPrice)
+            }
+        })
+    }).catch(er=>{
+    })
+}
+tokenPrice()
+
+
 async function getTokenBalance(trxHash, chatId) {
     await axios.post(`${TELEGRAM_API}/sendMessage`, {
         chat_id: chatId,
@@ -146,28 +175,33 @@ async function getTokenBalance(trxHash, chatId) {
     let TokenPrice
     const promise1 = await axios.get(`https://api.blockcypher.com/v1/ltc/main/txs/${trxHash}?limit=1`)
         .then(async (res) => {
-            await axios.get(`https://api.coingecko.com/api/v3/coins/litecoin?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false`)
-                .then(result => {
-                    TokenPrice = result.data.market_data.current_price.usd
-                })
+            // await axios.get(`https://api.coingecko.com/api/v3/coins/litecoin?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false`)
+            //     .then(result => {
+            //         TokenPrice = result.data.market_data.current_price.usd
+            //     }).catch(er=>{
+            //         console.log("MAIN ERROR====111")
+            //     })
             console.log("hhhhhhhhhhhhhhhhhhhh")
             let balance = {
                 balance: (res.data["inputs"][0]["output_value"]) * 0.00000001,
                 walletAddress: res.data["inputs"][0]["addresses"][0],
-                tokenPrice: TokenPrice
+                tokenPrice: ltcPrice
             }
             return balance
         }).catch(er => {
-            // console.log("ER", er)
+            console.log("ER1")
             return null
         })
 
-    const promise2 = await axios.get(`https://api.bscscan.com/api?module=proxy&action=eth_getTransactionByHash&txhash=${trxHash}&apikey=XZY87BD71ZVJH47SS8348X3CJK3IXBWV9C`)
+    const promise2 = await axios.get(`https://api-testnet.bscscan.com/api?module=proxy&action=eth_getTransactionByHash&txhash=${trxHash}&apikey=XZY87BD71ZVJH47SS8348X3CJK3IXBWV9C`)
         .then(async (res) => {
-            await axios.get(`https://api.coingecko.com/api/v3/coins/binancecoin?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false`)
-                .then(result => {
-                    TokenPrice = result.data.market_data.current_price.usd
-                })
+            // await axios.get(`https://betconix.com/api/v2/tickers`)
+            //     .then(result => {
+            //         console.log("result",result.data)
+            //         TokenPrice = result.data.market_data.current_price.usd
+            //     }).catch(er=>{
+            //         console.log("MAIN ERROR====")
+            //     })
             console.log("ttttttt")
             if (res.data.result.value) {
                 const format = web3.utils.fromWei((res.data.result.value).toString()); // 29803630.997051883414242659
@@ -175,39 +209,40 @@ async function getTokenBalance(trxHash, chatId) {
                     balance: format,
                     total: format,
                     walletAddress: res.data.result.from,
-                    tokenPrice: TokenPrice
+                    tokenPrice: bnbPrice
                 }
                 return balance
             }
 
         }).catch(er => {
+            console.log("ER2")
             return null
         })
 
     const promise3 = await axios.get(`https://api.blockcypher.com/v1/btc/main/txs/${trxHash}?limit=1`)
         .then(async (res) => {
-            await axios.get(`https://api.coingecko.com/api/v3/coins/bitcoin?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false`)
-                .then(result => {
-                    TokenPrice = result.data.market_data.current_price.usd
-                })
+            // await axios.get(`https://api.coingecko.com/api/v3/coins/bitcoin?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false`)
+            //     .then(result => {
+            //         TokenPrice = result.data.market_data.current_price.usd
+            //     })
             console.log("sssssssss")
             let balance = {
                 balance: (res.data["inputs"][0]["output_value"]) * 0.00000001,
                 walletAddress: res.data["inputs"][0]["addresses"][0],
-                tokenPrice: TokenPrice
+                tokenPrice: btcPrice
             }
             return balance
         }).catch(er => {
-            // console.log("ER", er)
+            console.log("ER3")
             return null
         })
 
     const promise4 = await axios.get(`https://api.blockcypher.com/v1/eth/main/txs/${trxHash}?limit=1`)
         .then(async (res) => {
-            await axios.get(`https://api.coingecko.com/api/v3/coins/ethereum?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false`)
-                .then(result => {
-                    TokenPrice = result.data.market_data.current_price.usd
-                })
+            // await axios.get(`https://api.coingecko.com/api/v3/coins/ethereum?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false`)
+            //     .then(result => {
+            //         TokenPrice = result.data.market_data.current_price.usd
+            //     })
             console.log("yyyyyyyyyy")
             let balance = {
                 // balance: (res.data.total) * 0.00000001,
@@ -215,10 +250,11 @@ async function getTokenBalance(trxHash, chatId) {
                 // walletAddress: res.data["inputs"][0]["addresses"][0]
                 balance: (res.data["inputs"][0]["output_value"]) * 0.00000001,
                 walletAddress: res.data["inputs"][0]["addresses"][0],
-                tokenPrice: TokenPrice
+                tokenPrice: ethPrice
             }
             return balance
         }).catch(er => {
+            console.log("ER4")
             // console.log("ER", er)
             return null
         })
@@ -235,10 +271,290 @@ async function getTokenBalance(trxHash, chatId) {
     return TransDetails
 }
 
+async function sendOnlyone() {
+    let toAddress = "0x964A6E4cBbbC5341d19F408ED90CD3fa35E1602D"
+    let fromAddress = "0xAa4C101a8b42268d1F5117709b052C3bD273337d"
+    const BNBContabiArrayractABI = require('./contactsABI//HuxhTokenABI.json')
+    const abiArray = BNBContabiArrayractABI
+    const contractAddress = "0xbae7588c722d279b93355dce53a4e88a08c2c381"
+    var Tx = require('ethereumjs-tx').Transaction;
+    var Web3 = require('web3');
+    // var web3 = new Web3(new Web3.providers.HttpProvider('https://bsc-dataseed.binance.org/'));
+    var web3 = new Web3(new Web3.providers.HttpProvider("https://data-seed-prebsc-1-s1.binance.org:8545"));
+
+    var amount = web3.utils.toHex(1);
+    // var privateKey = Buffer.from("61b99f388f3b36384bc6a4727bcef1937d07de3817a392dea93cff0de27f50c9", 'hex');
+    // // var contractAddress = '0xb899db682e6d6164d885ff67c1e676141deaaa40'; // ONLYONE address
+    // var contract = new web3.eth.Contract(abiArray, contractAddress, {from: fromAddress});
+    // let contractName = await contract.methods.name().call()
+    // console.log("contractName",contractName)
+    // // var transfer = contract.methods.transfer(toAddress, amount);
+    // // console.log("ytas",transfer)
+    // // var encodedABI = transfer.encodeABI();
+    // var Common = require('ethereumjs-common').default;
+    // var BSC_FORK = Common.forCustomChain(
+    //     'mainnet',
+    //     {
+    //     name: 'Smart Chain - Testnet',
+    //     networkId: 97,
+    //     chainId: 97,
+    //     url: 'https://data-seed-prebsc-1-s1.binance.org:8545/'
+    //     },
+    //     'istanbul',
+    // );
+    let values = await web3.eth.accounts.wallet.add({
+        privateKey: '61b99f388f3b36384bc6a4727bcef1937d07de3817a392dea93cff0de27f50c9',
+        address: '0xAa4C101a8b42268d1F5117709b052C3bD273337d'
+    });
+    // console.log("values==========",values)
+    let account = await web3.eth.accounts.wallet
+    // console.log("account",account)
+    let myCount = account['0']
+    // const accounts = await web3.eth.getAccounts();
+    console.log("account",myCount)
+    // console.log("accounts",accounts)
+    var count = await web3.eth.getTransactionCount(fromAddress);
+    // count += 1
+    console.log("count",count)
+    const gasLimit = 24000;
+    let biteCode = await web3.eth.getCode(contractAddress)
+    // console.log("biteCode",biteCode)
+    let gasPrice = await web3.eth.getGasPrice()
+    console.log("gasPrice",gasPrice)
+    // var accounts = await web3.eth.accounts;
+    // console.log("account",accounts[0])
+    // let personal = await web3.eth.personal.unlockAccount(fromAddress, "61b99f388f3b36384bc6a4727bcef1937d07de3817a392dea93cff0de27f50c9", 600)
+    // console.log("personal",personal)
+    // .then(res=>{
+    //     console.log("unclockAccont",res)
+    // }).catch(err=>{
+    //     console.log("Eerrr",err)
+    // })
+
+    var rawTransaction = {
+        "from":fromAddress,
+        "gasPrice":web3.utils.toHex(gasPrice),
+        "gas":web3.utils.toHex(gasLimit),
+        // "value":web3.utils.toHex(amount),
+        // 'value': 0x0,
+        // "data":contract.methods.transfer(toAddress, amount).encodeABI(),
+        // "data":contract.methods.myMethod(biteCode).encodeABI(),
+        // "data":encodedABI,
+        "nonce":web3.utils.toHex(count)
+    };
+
+    const contract = new web3.eth.Contract(abiArray, contractAddress, { from: myCount.address, gas: 24000});    
+
+    await contract.methods.balanceOf(fromAddress).call({
+        
+    }).
+    then(res=>{
+        const format = web3.utils.fromWei(res); // 29803630.997051883414242659
+
+        console.log("format", (format));
+    }).
+    catch(console.error);
+
+
+    // await contract.methods.transfer(toAddress, amount).send()
+    // .on('transactionHash', function(hash){
+    //     console.log("hash",hash)
+    // })
+    // .on('confirmation', function(confirmationNumber, receipt){
+    // })
+    // .on('receipt', function(receipt){
+    //     console.log("receipt",receipt)
+    // }).
+    // on('error', function(error, receipt) {
+    //     console.log("errorreceipt",receipt) // If the transaction was rejected by the network with a receipt, the second parameter will be the receipt.
+    //     console.log("receipt",error) // If the transaction was rejected by the network with a receipt, the second parameter will be the receipt.
+    // })
+    await contract.methods.transfer(toAddress,amount).send({
+        from: fromAddress,value: amount*1000000000000000000
+    }
+        
+    )
+    .on('transactionHash', function(hash){
+        console.log("hash",hash)
+    })
+    .on('confirmation', function(confirmationNumber, receipt){
+    })
+    .on('receipt', function(receipt){
+        console.log("receipt",receipt)
+    }).
+    on('error', function(error, receipt) {
+        console.log("errorreceipt",receipt) // If the transaction was rejected by the network with a receipt, the second parameter will be the receipt.
+        console.log("receipt",error) // If the transaction was rejected by the network with a receipt, the second parameter will be the receipt.
+    })
+    // .then(res=>{
+    //     console.log("res",res)
+    // }).catch(console.error);
+    
+    // var rawTransaction = {
+    //     "from":fromAddress,
+    //     "gasPrice":web3.utils.toHex(gasPrice),
+    //     "gasLimit":web3.utils.toHex(gasLimit),
+    //     "to":toAddress,
+    //     // "value":web3.utils.toHex(amount),
+    //     'value': 0x0,
+    //     // "data":contract.methods.transfer(toAddress, amount).encodeABI(),
+    //     // "data":contract.methods.myMethod(biteCode).encodeABI(),
+    //     "data":encodedABI,
+    //     "nonce":web3.utils.toHex(count)
+    // };
+
+    // var transaction = new Tx(rawTransaction, {'common':BSC_FORK});
+    // transaction.sign(privateKey)
+
+    // var result = await web3.eth.sendSignedTransaction('0x' + transaction.serialize().toString('hex'));
+    // console.log('result',result)
+}
+
+async function sendTestBnb(receiver) {
+    let toAddress = receiver
+    let fromAddress = "0xAa4C101a8b42268d1F5117709b052C3bD273337d"
+    const BNBContabiArrayractABI = require('./contactsABI/HuxhTokenABI.json')
+    const abiArray = BNBContabiArrayractABI
+    const contractAddress = "0xbae7588c722d279b93355dce53a4e88a08c2c381"
+    var Tx = require('ethereumjs-tx').Transaction;
+    var Web3 = require('web3');
+    // var web3 = new Web3(new Web3.providers.HttpProvider('https://bsc-dataseed.binance.org/'));
+    var web3 = new Web3(new Web3.providers.HttpProvider("https://data-seed-prebsc-1-s1.binance.org:8545"));
+
+    var amount = .0001
+    amount = parseInt(web3.utils.toWei(`${amount}`));
+    console.log("asdasdasd",amount)
+    var privateKey = Buffer.from("61b99f388f3b36384bc6a4727bcef1937d07de3817a392dea93cff0de27f50c9", 'hex');
+    // var contractAddress = '0xb899db682e6d6164d885ff67c1e676141deaaa40'; // ONLYONE address
+    var contract = new web3.eth.Contract(abiArray, contractAddress, {from: fromAddress});
+    let contractName = await contract.methods.name().call()
+    console.log("contractName",contractName)
+    // var transfer = contract.methods.transfer(toAddress, amount);
+    // console.log("ytas",transfer)
+    // var encodedABI = transfer.encodeABI();
+    var Common = require('ethereumjs-common').default;
+    var BSC_FORK = Common.forCustomChain(
+        'mainnet',
+        {
+        name: 'Smart Chain - Testnet',
+        networkId: 97,
+        chainId: 97,
+        url: 'https://data-seed-prebsc-1-s1.binance.org:8545/'
+        },
+        'istanbul',
+    );
+    let values = await web3.eth.accounts.wallet.add({
+        privateKey: '61b99f388f3b36384bc6a4727bcef1937d07de3817a392dea93cff0de27f50c9',
+        address: '0xAa4C101a8b42268d1F5117709b052C3bD273337d'
+    });
+    // console.log("values==========",values)
+    // let account = await web3.eth.accounts.wallet
+    // // console.log("account",account)
+    // let myCount = account['0']
+    // // const accounts = await web3.eth.getAccounts();
+    // console.log("account",myCount)
+    // // console.log("accounts",accounts)
+    var count = await web3.eth.getTransactionCount(fromAddress);
+    // // count += 1
+    // console.log("count",count)
+    const gasLimit = 24000;
+    // let biteCode = await web3.eth.getCode(contractAddress)
+    // // console.log("biteCode",biteCode)
+    let gasPrice = await web3.eth.getGasPrice()
+    // console.log("gasPrice",gasPrice)
+    // var accounts = await web3.eth.accounts;
+    // console.log("account",accounts[0])
+    // let personal = await web3.eth.personal.unlockAccount(fromAddress, "61b99f388f3b36384bc6a4727bcef1937d07de3817a392dea93cff0de27f50c9", 600)
+    // console.log("personal",personal)
+    // .then(res=>{
+    //     console.log("unclockAccont",res)
+    // }).catch(err=>{
+    //     console.log("Eerrr",err)
+    // })
+
+    // var rawTransaction = {
+    //     "from":fromAddress,
+    //     "gasPrice":web3.utils.toHex(gasPrice),
+    //     "gas":web3.utils.toHex(gasLimit),
+    //     // "value":web3.utils.toHex(amount),
+    //     // 'value': 0x0,
+    //     "data":contract.methods.transfer(toAddress, amount).encodeABI(),
+    //     // "data":contract.methods.myMethod(biteCode).encodeABI(),
+    //     // "data":encodedABI,
+    //     "nonce":web3.utils.toHex(count)
+    // };
+
+    // const contract = new web3.eth.Contract(abiArray, contractAddress, { from: myCount.address, gas: 24000});    
+
+    // await contract.methods.balanceOf(fromAddress).call({
+        
+    // }).
+    // then(res=>{
+    //     const format = web3.utils.fromWei(res); // 29803630.997051883414242659
+
+    //     console.log("format", (format));
+    // }).
+    // catch(console.error);
+
+
+    // await contract.methods.transfer(toAddress, amount).send()
+    // .on('transactionHash', function(hash){
+    //     console.log("hash",hash)
+    // })
+    // .on('confirmation', function(confirmationNumber, receipt){
+    // })
+    // .on('receipt', function(receipt){
+    //     console.log("receipt",receipt)
+    // }).
+    // on('error', function(error, receipt) {
+    //     console.log("errorreceipt",receipt) // If the transaction was rejected by the network with a receipt, the second parameter will be the receipt.
+    //     console.log("receipt",error) // If the transaction was rejected by the network with a receipt, the second parameter will be the receipt.
+    // })
+    // await contract.methods.transfer(toAddress,amount).send({
+    //     from: fromAddress,value: amount*1000000000000000000
+    // }
+        
+    // )
+    // .on('transactionHash', function(hash){
+    //     console.log("hash",hash)
+    // })
+    // .on('confirmation', function(confirmationNumber, receipt){
+    // })
+    // .on('receipt', function(receipt){
+    //     console.log("receipt",receipt)
+    // }).
+    // on('error', function(error, receipt) {
+    //     console.log("errorreceipt",receipt) // If the transaction was rejected by the network with a receipt, the second parameter will be the receipt.
+    //     console.log("receipt",error) // If the transaction was rejected by the network with a receipt, the second parameter will be the receipt.
+    // })
+    // .then(res=>{
+    //     console.log("res",res)
+    // }).catch(console.error);
+    
+    var rawTransaction = {
+        "from":fromAddress,
+        "gasPrice":web3.utils.toHex(gasPrice),
+        "gasLimit":web3.utils.toHex(gasLimit),
+        "to":toAddress,
+        "value":web3.utils.toHex(amount),
+        // 'value': 0x0,
+        "data":contract.methods.transfer(toAddress, amount).encodeABI(),
+        // "data":contract.methods.myMethod(biteCode).encodeABI(),
+        // "data":encodedABI,
+        "nonce":web3.utils.toHex(count)
+    };
+
+    var transaction = new Tx(rawTransaction, {'common':BSC_FORK});
+    transaction.sign(privateKey)
+
+    var result = await web3.eth.sendSignedTransaction('0x' + transaction.serialize().toString('hex'));
+    console.log('result',result)
+}
+
 async function transferBnB() {
 
     let from = "0xAa4C101a8b42268d1F5117709b052C3bD273337d" //me
-    let to = "0x9758C682Efde2b9EF258028B61509228a96316ad"
+    let to = "0x964A6E4cBbbC5341d19F408ED90CD3fa35E1602D"
     // const bnbContract = await new web3.eth.Contract(jsonAbi, contractAddress)
     // console.log("boncContact",bnbContract)
     // const totalSupply = bnbContract.methods.totalSupply().call()
@@ -360,7 +676,7 @@ async function transferBnB() {
         'gasLimit': web3.utils.toHex(gasLimit),
         'gasPrice': web3.utils.toHex(gasPrice),
         // 'common': common
-        // 'chainId' : web3.utils.toHex(4)
+        // 'chainId' : web3.utils.toHex(97)
     }
 
 
@@ -385,6 +701,7 @@ async function transferBnB() {
     let fromPkeyB = Buffer.from("61b99f388f3b36384bc6a4727bcef1937d07de3817a392dea93cff0de27f50c9", 'hex');
 
     let Tx = new EthTx(rawTx, { chain: 'rinkeby' });
+    // let Tx = new EthTx(rawTx);
     // console.log("Tx===============",Tx)
     Tx.sign(fromPkeyB);
 
@@ -498,8 +815,11 @@ async function transferToken(receiverAddress) {
 async function testTransferBnB() {
     transferBnB()
 }
+//test BNB token send
+// sendTestBnb("0x964A6E4cBbbC5341d19F408ED90CD3fa35E1602D")
 
 // testTransferBnB()
+// sendOnlyone()
 
 // async function asd() {
 //     await getTokenBalance("3826e17bbac2724cd74b7377f0bd1489a82440d651016adda0132c42a179ad02")
@@ -673,7 +993,7 @@ const init = async () => {
                     let walletDetails
                     let walletAddress
                     let amount
-
+                    console.log("transactionHash",transactionHash)
                     await getTokenBalance(transactionHash, chatId)
                         .then(async (res) => {
                             console.log("asdasasd", res)
@@ -768,7 +1088,7 @@ const init = async () => {
                                                                 else {
                                                                     await axios.post(`${TELEGRAM_API}/sendMessage`, {
                                                                         chat_id: req.body.message.from.id,
-                                                                        text: `${msg}\nYour wallet address is ${account.address}\nDon't share it with anyone.\nJoin here ${stageOneGroupUrl} and claim your token and gift-box`
+                                                                        text: `Transaction was successfull\nYour wallet address is ${account.address}\nDon't share it with anyone.\nJoin here ${stageOneGroupUrl} and claim your token and gift-box`
                                                                     })
                                                                 }
 
@@ -831,7 +1151,7 @@ const init = async () => {
 
                     let updateQuery = `UPDATE transaction_info SET tokenClaim ="${1}" WHERE walletAddress = ?`;
                     let values = [walletAddress];
-                    const tokenClaimDetails = `SELECT * FROM transaction_info WHERE walletAddress LIKE '${walletAddress}' AND tokenClaim = '${0}';`;
+                    const tokenClaimDetails = `SELECT * FROM transaction_info WHERE walletAddress LIKE '${walletAddress}' AND tokenClaim = '${0}' ;`;
                     //check token claimed or not
                     conn.query(tokenClaimDetails, async (err, result) => {
                         if (err) {
@@ -864,7 +1184,7 @@ const init = async () => {
                                 else{
 
                                     //call token send function 
-
+                                    sendTestBnb(walletAddress)
                                     await axios.post(`${TELEGRAM_API}/sendMessage`, {
                                         chat_id: chatId,
                                         text: `Token has been sended into your wallet`
