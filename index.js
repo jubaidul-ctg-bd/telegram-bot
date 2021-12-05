@@ -987,12 +987,12 @@ const init = async () => {
                 }
                 else if (keyWord == "/otp") {
 
-                    console.log("asdasd", keyWord)
                     let otpCode = (req.body.message.text).split("#")[1]
                     let transactionHash = (req.body.message.text).split("#")[2]
                     let walletDetails
                     let walletAddress
                     let amount
+                    console.log("asdasd=====", keyWord,otpCode)
                     console.log("transactionHash",transactionHash)
                     await getTokenBalance(transactionHash, chatId)
                         .then(async (res) => {
@@ -1017,10 +1017,10 @@ const init = async () => {
                                     walletAddress = walletDetails.walletAddress
                                     amount = walletDetails.balance * walletDetails.tokenPrice
                                     const numberCheckingQry = `SELECT id,walletAddress,success FROM transaction_info WHERE otp LIKE '${otpCode}' AND success = '${0}' AND walletAddress = '${walletAddress}';`;
-                                    const dublicateCheck = `SELECT id FROM transaction_info WHERE transactionHash LIKE '${transactionHash}' AND success = '${1}' AND walletAddress = '${walletAddress}';`;
+                                    // const dublicateCheck = `SELECT id FROM transaction_info WHERE transactionHash LIKE '${transactionHash}' AND success = '${1}' AND walletAddress = '${walletAddress}';`;
 
-                                    //checking fraud entry with same trx hash
-                                    conn.query(dublicateCheck, async (err, result) => {
+
+                                    conn.query(numberCheckingQry, async (err, result) => {
                                         if (err) {
                                             // return res.status(501).json({
                                             //     msg: "Number checking error",
@@ -1032,15 +1032,13 @@ const init = async () => {
                                                 text: `Server busy try again later...`
                                             })
                                         }
-                                        if (result.length > 0) {
-                                            await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                                                chat_id: chatId,
-                                                text: `This transactionhash has been used try a new one`
-                                            })
-                                        }
-                                        // with real trx hash 
-                                        else {
-                                            conn.query(numberCheckingQry, async (err, result) => {
+                                        // real trx hash validated successful 
+                                        else if (result.length > 0) {
+                                            console.log("HERE I AM HERE")
+                                            // let updateQuery = `UPDATE transaction_info SET success=1 WHERE transactionHas='${otpCode}';`;
+                                            let updateQuery = `UPDATE transaction_info SET success ="${1}",transactionHash ="${transactionHash}" WHERE walletAddress = ?`;
+                                            let values = [walletAddress];
+                                            conn.query(updateQuery, [values], async (err, result) => {
                                                 if (err) {
                                                     // return res.status(501).json({
                                                     //     msg: "Number checking error",
@@ -1052,72 +1050,78 @@ const init = async () => {
                                                         text: `Server busy try again later...`
                                                     })
                                                 }
-                                                // real trx hash validated successful 
-                                                else if (result.length > 0) {
-                                                    console.log("HERE I AM HERE")
-                                                    // let updateQuery = `UPDATE transaction_info SET success=1 WHERE transactionHas='${otpCode}';`;
-                                                    let updateQuery = `UPDATE transaction_info SET success ="${1}",transactionHash ="${transactionHash}" WHERE walletAddress = ?`;
-                                                    let values = [walletAddress];
-                                                    conn.query(updateQuery, [values], async (err, result) => {
+                                                //creating new wallet  
+                                                else {
+                                                    let account = await web3.eth.accounts.create()
+                                                    let signupQry = "INSERT INTO user (id, walletAddress, privateKey, amount) VALUES (?);";
+                                                    let signupValues = [null, account.address, account.privateKey, amount];
+
+
+                                                    conn.query(signupQry, [signupValues], async (err, result, fields) => {
                                                         if (err) {
-                                                            // return res.status(501).json({
-                                                            //     msg: "Number checking error",
-                                                            //     error: err.message
-                                                            // })
-                                                            console.log("erro", err)
                                                             await axios.post(`${TELEGRAM_API}/sendMessage`, {
                                                                 chat_id: chatId,
-                                                                text: `Server busy try again later...`
+                                                                text: "Server is busy try again..."
                                                             })
                                                         }
-                                                        //creating new wallet  
+                                                        //inbox user with walletId
                                                         else {
-                                                            let account = await web3.eth.accounts.create()
-                                                            let signupQry = "INSERT INTO user (id, walletAddress, privateKey, amount) VALUES (?);";
-                                                            let signupValues = [null, account.address, account.privateKey, amount];
-
-
-                                                            conn.query(signupQry, [signupValues], async (err, result, fields) => {
-                                                                if (err) {
-                                                                    await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                                                                        chat_id: chatId,
-                                                                        text: "Server is busy try again..."
-                                                                    })
-                                                                }
-                                                                //inbox user with walletId
-                                                                else {
-                                                                    await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                                                                        chat_id: req.body.message.from.id,
-                                                                        text: `Transaction was successfull\nYour wallet address is ${account.address}\nDon't share it with anyone.\nJoin here ${stageOneGroupUrl} and claim your token and gift-box`
-                                                                    })
-                                                                }
-
-                                                                // return res.status(200).json({
-                                                                //     msg: 'Registration success',
-                                                                //     data: {
-                                                                //         user_id: result.insertId
-                                                                //     }
-                                                                // });
-                                                            })
-                                                            console.log(result)
                                                             await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                                                                chat_id: chatId,
-                                                                text: `payment successfull\ncheck your inbox we have provided you further instructions`
+                                                                chat_id: req.body.message.from.id,
+                                                                text: `Transaction was successfull\nYour wallet address is ${account.address}\nDon't share it with anyone.\nJoin here ${stageOneGroupUrl} and claim your token and gift-box`
                                                             })
                                                         }
 
+                                                        // return res.status(200).json({
+                                                        //     msg: 'Registration success',
+                                                        //     data: {
+                                                        //         user_id: result.insertId
+                                                        //     }
+                                                        // });
                                                     })
-
-                                                } else {
                                                     console.log(result)
                                                     await axios.post(`${TELEGRAM_API}/sendMessage`, {
                                                         chat_id: chatId,
-                                                        text: `Invalid OTP or Transactionhash\nTry again...`
+                                                        text: `payment successfull\ncheck your inbox we have provided you further instructions`
                                                     })
                                                 }
+
+                                            })
+
+                                        } else {
+                                            console.log(result)
+                                            await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                                                chat_id: chatId,
+                                                text: `Invalid OTP or Transactionhash\nTry again...`
                                             })
                                         }
                                     })
+
+
+                                    //checking fraud entry with same trx hash
+                                    // conn.query(dublicateCheck, async (err, result) => {
+                                    //     if (err) {
+                                    //         // return res.status(501).json({
+                                    //         //     msg: "Number checking error",
+                                    //         //     error: err.message
+                                    //         // })
+                                    //         console.log("erro", err)
+                                    //         await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                                    //             chat_id: chatId,
+                                    //             text: `Server busy try again later...`
+                                    //         })
+                                    //     }
+                                    //     if (result.length > 0) {
+                                    //         await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                                    //             chat_id: chatId,
+                                    //             text: `This transactionhash has been used try a new one`
+                                    //         })
+                                    //     }
+                                    //     // with real trx hash 
+                                    //     else {
+                                            
+                                    //     }
+                                    // })
 
                                 }
                                 else {
