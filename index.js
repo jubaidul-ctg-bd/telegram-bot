@@ -13,7 +13,14 @@ const ganache = require('ganache-cli');
 const e = require('express')
 const app = express()
 app.use(bodyParser.json())
+var multer = require('multer');
+var upload = multer();
+// for parsing multipart/form-data
+app.use(upload.array()); 
+app.use(express.static('public'));
 
+app.use(bodyParser.json({}));//this line is required to tell your app to parse the body as json
+app.use(bodyParser.urlencoded({ extended: false }));
 // init env file
 dotenv.config()
 
@@ -1404,11 +1411,17 @@ async function groupCheck() {
 
 }
 
+let signalData = ``
+async function assign(key,value){
+    signalData += `\n${key} : ${value}`
+    return signalData
+}
+
 const init = async () => {
     const res = await axios.get(`${TELEGRAM_API}/setWebhook?url=${WEBHOOK_URL}`).then(
         res => {
             app.post(URI, async (req, res) => {
-                console.log("req==============", req.body)
+                console.log("req==============", req)
                 let chatId
                 let initialTest
                 let temp
@@ -1425,13 +1438,37 @@ const init = async () => {
                 let userWalletAddress
                 let keyBoard
                 let chatTitle = 0
+                let tradingViewSignal = 0
+                let secret_groupId = -695063140
                 // if(req.body.callback_query){
                 //     console.log("H",req.body.callback_query)
                 //     console.log("H",req.body)
                 // }
 
+                if(req.body.signal){
+                    console.log("HERE")
+                    tradingViewSignal = true
+                    text = req.body
+                   
+                    let obj = req.body
+                    // const map = new Map(Object.entries(req.body));
+                    // Object.keys(obj).forEach(async function assign(key) {
+                    //     console.log(key, obj[key]);
+                    //     if(!key == 'signal')
+                      
+                    // });
+                    Object.keys(obj).forEach(async function (key){
+                        if(key!='signal'){
+                            await assign(key,obj[key]).then(res=>{
+                                console.log("res",res)
+                            }).catch(er=>{
+                                console.log("res",er)
+                            })
+                        }
+                    });
+                }
                 //requesting from firstStage group
-                if (req.body && req.body.message && req.body.message.new_chat_title) {
+                else if (req.body && req.body.message && req.body.message.new_chat_title) {
                     console.log("I AM HERE")
                     chat_id = req.body.message.chat.id
                     text = "Group name has been changed"
@@ -1808,9 +1845,8 @@ const init = async () => {
                     console.log("HERE TEXT CANT!!!!!!!!!!!!!!!", req.body)
                     req.body.message.text = "Available comamnd  \n" +
                         "/all - show all available commands \n" +
-                        "/connect - connect to metaMask Wallet \n" +
-                        "/payment#walletAddress - book for a payment process\n" +
-                        "/otp#yourotpcode - confirm your transaction with the otp that we have sended you\n"
+                        "/connect - connect to metaMask Wallet \n" 
+                       
                 }
                 else if (!req.body.my_chat_member) {
 
@@ -1823,7 +1859,17 @@ const init = async () => {
                         "/walletAddress### - balance check example\n"
                     console.log("!!!!!!!!!!!!!!!", req.body)
                 }
-                if (chatTitle == true) {
+                if(tradingViewSignal==true){
+                    console.log("HERE",req.body)
+                  
+                    await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: secret_groupId,
+                        text: signalData,
+                        // reply_markup: JSON.stringify(keyBoard)
+                    })
+
+                }
+                else if (chatTitle == true) {
                     const mtext = text
                     if (req.body.callback_query) {
                         await axios.post(`${TELEGRAM_API}/sendMessage`, {
@@ -2888,9 +2934,8 @@ const init = async () => {
                     initialTest =
                         "Available comamnd  \n" +
                         "/all - show all available commands \n" +
-                        "/connect - connect to metaMask Wallet \n" +
-                        "/payment#walletAddress - book for a payment process\n" +
-                        "/otp#yourotpcode - confirm your transaction with the otp that we have sended you\n"
+                        "/connect - connect to metaMask Wallet \n" 
+                       
                     keyBoard = {
                         "inline_keyboard": [
                             [
