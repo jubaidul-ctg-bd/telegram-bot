@@ -1421,7 +1421,6 @@ const init = async () => {
     const res = await axios.get(`${TELEGRAM_API}/setWebhook?url=${WEBHOOK_URL}`).then(
         res => {
             app.post(URI, async (req, res) => {
-                console.log("req==============", req)
                 let chatId
                 let initialTest
                 let temp
@@ -1446,7 +1445,6 @@ const init = async () => {
                 // }
 
                 if(req.body.signal){
-                    console.log("HERE")
                     tradingViewSignal = true
                     text = req.body
                    
@@ -2451,10 +2449,39 @@ const init = async () => {
                                     })
                                 })
                         } else {
-                            await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                                chat_id: chatId,
-                                text: "Your payment is done\nCheck we have inboxed you all details"
+                            let reCheckSuccessQuery = `SELECT register_user.*,user_wallet.*
+                            FROM register_user
+                            JOIN user_wallet
+                            ON register_user.user_wallet_id=user_wallet.id
+                            WHERE register_user.user_id = '${user_id}' AND user_wallet.success = ${1};`;
+                            
+
+                            await new Promise((resolve, reject) => {
+                                conn.query(reCheckSuccessQuery, async (err, result) => {
+                                    console.log("PAYMENT CONFRIM RECHECK",result)
+                                    if (err) {
+                                        await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                                            chat_id: chatId,
+                                            text: `Server busy try again later...`
+                                        })
+                                    }
+                                    else if(result.length>0){
+                                        
+                                        await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                                            chat_id: chatId,
+                                            text: "Your payment is done\nCheck we have inboxed you all details"
+                                        })
+                                        resolve()
+                                    }
+                                    else{
+                                        await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                                            chat_id: chatId,
+                                            text: "You are not registered\nPlease follow the process"
+                                        })
+                                    }
+                                })
                             })
+                            
                         }
                     })
 
