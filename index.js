@@ -2231,13 +2231,28 @@ const init = async () => {
 
 
                                             conn.query(userPrivateWallet, [bitcoinWalletData], async (err, result, fields) => {
-
+                                                if(err){
+                                                    console.log("BTC Wallet ERROR",err)
+                                                }
+                                                else{
+                                                    console.log("BTC Wallet CREATE")
+                                                }
                                             })
                                             conn.query(userPrivateWallet, [litecoinWalletData], async (err, result, fields) => {
-
+                                                if(err){
+                                                    console.log("LTC Wallet ERROR",err)
+                                                }
+                                                else{
+                                                    console.log("LTC Wallet CREATE")
+                                                }
                                             })
                                             conn.query(userPrivateWallet, [ethWalletData], async (err, result, fields) => {
-
+                                                if(err){
+                                                    console.log("ETH Wallet ERROR",err)
+                                                }
+                                                else{
+                                                    console.log("ETH Wallet CREATE")
+                                                }
                                             })
 
 
