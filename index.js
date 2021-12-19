@@ -1255,22 +1255,22 @@ async function userDetails(user_id) {
                 } else {
                     msg1 = "Claim Token"
                 }
-                if (result.nft == 1) {
+                if (result[0].nft == 1) {
                     msg2 = "NFT already claimed"
                 } else {
                     msg2 = "Claim NFT"
                 }
-                if (result.watch == 1) {
+                if (result[0].watch == 1) {
                     msg3 = "Watch Wallet already claimed"
                 } else {
                     msg3 = "Claim Watch Wallet"
                 }
-                if (result.miningPc == 1) {
+                if (result[0].miningPc == 1) {
                     msg4 = "Mining PC already claimed"
                 } else {
                     msg4 = "Claim Mining PC"
                 }
-                if (result.swapToken == 1) {
+                if (result[0].swapToken == 1) {
                     msg5 = "Swap Token already claimed"
                 } else {
                     msg5 = "Claim Swap Token"
