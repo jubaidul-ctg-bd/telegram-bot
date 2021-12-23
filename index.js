@@ -16,13 +16,596 @@ app.use(bodyParser.json())
 var multer = require('multer');
 var upload = multer();
 // for parsing multipart/form-data
-app.use(upload.array()); 
+app.use(upload.array());
 app.use(express.static('public'));
 
 app.use(bodyParser.json({}));//this line is required to tell your app to parse the body as json
 app.use(bodyParser.urlencoded({ extended: false }));
 // init env file
 dotenv.config()
+
+
+
+//Storing Some Token Value
+
+let btcPrice
+let bnbPrice
+let ltcPrice
+let ethPrice
+async function tokenPrice() {
+    await axios.get(`https://betconix.com/api/v2/tickers`)
+        .then(result => {
+            // console.log("result===",result.)
+            result.data.map(eleme => {
+                if (eleme.ticker_id == 'BTC_USD') {
+                    btcPrice = eleme.last_price
+                }
+                else if (eleme.ticker_id == 'LTC_USD') {
+                    ltcPrice = eleme.last_price
+                }
+                else if (eleme.ticker_id == 'ETH_USD') {
+                    ethPrice = eleme.last_price
+                }
+                else if (eleme.ticker_id == 'BNB_USD') {
+                    bnbPrice = eleme.last_price
+                    console.log(bnbPrice)
+                }
+            })
+        }).catch(er => {
+        })
+}
+tokenPrice()
+
+
+
+
+
+
+//Discod Managment =================
+
+const msg = require('./private-message')
+const walletBalance = require('./myLib/checkWalletBalance')
+const cbMsg = require('./discordButton')
+
+const discord = require('discord.js');
+const { Client, WebhookClient } = require('discord.js');
+const privateMessage = require('./private-message')
+const client = new Client({
+    partials: ['MESSAGE', 'REACTION']
+});
+
+// const webhookClient = new WebhookClient(
+//   process.env.WEBHOOK_ID,
+//   process.env.WEBHOOK_TOKEN,
+// );
+require('discord-buttons')(client)
+client.on('ready', () => {
+    console.log(`${client.user.username} has logged in.`);
+});
+
+
+
+const DSPREFIX = '/'
+const firstGroupName = "XGX-Gift"
+const DSGroupLink = 'https://discord.gg/MXeNCtwaDv'
+client.on('message', async (message) => {
+    if (message.author.bot) return
+    let reqGroupName = message.guild.name
+
+
+    const CMD_NAME = message.content.substring(DSPREFIX.length)
+
+    // console.log("req",message)
+    console.log("req", message.guild.name)
+
+
+
+    if (message.content.startsWith(DSPREFIX)) {
+        console.log("COMMADN_ANME", CMD_NAME)
+        if (CMD_NAME == 'all' && reqGroupName == 'XGX') {
+
+            await cbMsg.buttonMsg(message).then(res => {
+                // console.log("res", res)
+            }).catch(er => {
+                console.log("ERROR", er)
+            })
+
+        }
+        else if (CMD_NAME == 'all' && reqGroupName == 'XGX-Gift') {
+            console.log("HERE========")
+            await cbMsg.buttonGift(message).then(res => {
+                console.log("res", res)
+            }).catch(er => {
+                console.log("ERROR", er)
+            })
+
+        }
+
+    } else {
+
+
+
+    }
+
+
+})
+
+client.on('clickButton', async (button) => {
+    // console.log("button.usser.id", button.guild)
+    let channelId = button.message.author.id
+    let botId = button.message.author.id
+    let user_id = button.clicker.id
+    let serverError = "Server is busy try again..."
+
+    // let userData = await client.users.fetch(button.channel.id)
+    // let channelData = await client.channels.get(button.channel.id)
+
+
+    if (button.id === 'processToPayment') {
+        let otp = Math.floor(1000 + Math.random() * 9000)
+        let user_wallet_id
+        //Generate eth address with private key
+        let account = await web3.eth.accounts.create()
+
+        //Generate lit coin address with private key
+        let privateKeyLTC = new litecore.PrivateKey('testnet');
+        // let privateKeyLTC = new litecore.PrivateKey();
+        let addressLTC = privateKeyLTC.toAddress();
+        //Generate Bit coin address with private key
+        let privateKeyWIF = bitcore.PrivateKey('testnet').toWIF();
+        // let privateKeyWIF = bitcore.PrivateKey().toWIF();
+        let privateKeyBTC = bitcore.PrivateKey.fromWIF(privateKeyWIF);
+        let addressBTC = privateKeyBTC.toAddress();
+
+        let userPrivateWallet = "INSERT INTO user_private_wallet (id, user_wallet_id, privateKey, walletAddress, walletType) VALUES (?);";
+
+        let updateQuery = `UPDATE register_user SET token ="${0}" WHERE user_id = '${user_id}'`;
+        // let values = [req.body.message.from.id];
+        const userWalletExist = `SELECT * FROM register_user WHERE user_id LIKE '${user_id}';`;
+        //create user wallet
+        let personalWalletQuery = "INSERT INTO user_wallet (id, walletAddress, privateKey, amount, otp) VALUES (?);";
+        let personalWalletData = [null, account.address, account.privateKey, 0, otp];
+
+
+        //register user query
+        let registereDuserQuery = "INSERT INTO register_user (id, user_wallet_id,user_id,token,nft,watch,miningPc,swapToken) VALUES (?);";
+        conn.query(userWalletExist, async (err, result) => {
+            console.log("error", err)
+            if (err) {
+                console.log("error", err)
+                await msg.channelMessage(message, serverError).then(res => {
+                    console.log("res error")
+                }).catch(er => {
+                    console.log("catch erro")
+                })
+            }
+            //user found
+            else if (result.length > 0) {
+
+                cbMsg.buttonMsg(button.message).then(res => {
+                    // console.log("res", res)
+                }).catch(er => {
+                    console.log("ERROR", er)
+                })
+                button.channel.send(`Your are already registered.\nPlease make the payment and Click on CONFIRM PAYMENT`)
+                // msg(`Your are already registered.\nPlease make the payment and Click on CONFIRM PAYMENT`)
+                // client.on('messageCreate', message => {
+                //     client.channels.cache.get('channelId').send(`Your are already registered.\nPlease make the payment and Click on CONFIRM PAYMENT`);
+                // })
+                // channelData.send(`Your are already registered.\nPlease make the payment and Click on CONFIRM PAYMENT`)
+            }
+            //did not found user then create userWallet
+            else {
+                conn.query(personalWalletQuery, [personalWalletData], async (err, result, fields) => {
+                    if (err) {
+                        console.log("error", err)
+                        msg.channelMessage(message, serverError).then(res => {
+                            console.log("res error")
+                        }).catch(er => {
+                            console.log("catch erro")
+                        })
+                    }
+                    //create register user details
+                    else {
+                        user_wallet_id = result.insertId
+                        let registeredUserData = [null, user_wallet_id, user_Id, 1, 1, 1, 1, 1];
+                        conn.query(registereDuserQuery, [registeredUserData], async (err, result, fields) => {
+                            if (err) {
+                                msg.channelMessage(message, serverError).then(res => {
+                                    console.log("res error")
+                                }).catch(er => {
+                                    console.log("catch erro")
+                                })
+                            }
+                            else {
+
+                                let bitcoinWalletData = [null, user_wallet_id, privateKeyBTC, addressBTC, "BTC"];
+                                let litecoinWalletData = [null, user_wallet_id, privateKeyLTC, addressLTC, "LTC"];
+                                let ethWalletData = [null, user_wallet_id, account.privateKey, account.address, "ETH"];
+
+
+                                conn.query(userPrivateWallet, [bitcoinWalletData], async (err, result, fields) => {
+                                    if (err) {
+                                        console.log("BTC Wallet ERROR", err)
+                                    }
+                                    else {
+                                        console.log("BTC Wallet CREATE")
+                                    }
+                                })
+                                conn.query(userPrivateWallet, [litecoinWalletData], async (err, result, fields) => {
+                                    if (err) {
+                                        console.log("LTC Wallet ERROR", err)
+                                    }
+                                    else {
+                                        console.log("LTC Wallet CREATE")
+                                    }
+                                })
+                                conn.query(userPrivateWallet, [ethWalletData], async (err, result, fields) => {
+                                    if (err) {
+                                        console.log("ETH Wallet ERROR", err)
+                                    }
+                                    else {
+                                        console.log("ETH Wallet CREATE")
+                                    }
+                                })
+
+                                cbMsg.buttonMsg(button.message).then(res => {
+                                    // console.log("res", res)
+                                }).catch(er => {
+                                    console.log("ERROR", er)
+                                })
+
+                                await client.users.fetch(user_id).then(user => {
+                                    user.send(`Your Verification code is ${otp}\nDon't share it with anyone.\n
+                                    Bitcoin wallet address - ${addressBTC}\n
+                                    Ethereum wallet address - ${account.address}\n
+                                    Litecoin wallet address - ${addressLTC}\n
+                                    Binance Coin wallet address - ${account.address}\n`)
+
+
+                                }).catch(async (er) => {
+                                    console.log("HERE===============", er)
+                                    await msg.channelMessage(button.message, serverError).then(res => {
+                                        // console.log("res error")
+                                    }).catch(er => {
+                                        // console.log("catch erro")
+                                    })
+                                })
+                                // await msg.privateMessage(button.message, `Your Verification code is ${otp}\nDon't share it with anyone.\n
+                                // Bitcoin wallet address - ${addressBTC}\n
+                                // Ethereum wallet address - ${account.address}\n
+                                // Litecoin wallet address - ${addressLTC}\n
+                                // Binance Coin wallet address - ${account.address}\n`)
+
+                                // await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                                //     chat_id: user_id,
+                                // text: `Your Verification code is ${otp}\nDon't share it with anyone.\n
+                                //             Bitcoin wallet address - ${addressBTC}\n
+                                //             Ethereum wallet address - ${account.address}\n
+                                //             Litecoin wallet address - ${addressLTC}\n
+                                //             Binance Coin wallet address - ${account.address}\n`
+                                // }).catch(async (err) => {
+                                //     console.log("error", err)
+                                //     await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                                //         chat_id: chatId,
+                                //         text: "Server is busy try again..."
+                                //     })
+                                // })
+                            }
+                        })
+                    }
+                })
+            }
+        })
+
+    } else if (button.id === 'paymentComplete') {
+
+        const userWalletExist = `SELECT register_user.*,user_wallet.*
+                    FROM register_user
+                    JOIN user_wallet
+                    ON register_user.user_wallet_id=user_wallet.id
+                    WHERE register_user.user_id = '${user_id}' AND user_wallet.success = ${0};`;
+
+        conn.query(userWalletExist, async (err, result) => {
+            // console.log("result======", result.token)
+            // console.log("result++++++", result[0].token)
+            if (err) {
+                console.log("ERROR==============asdasdasdasdas", err)
+                return null
+            }
+            else if (result.length > 0) {
+                // console.log("HERE======CONFRIM PAYMENT", result)
+                user_wallet_id = result[0].user_wallet_id
+                register_user_id = result[0].id
+                await walletBalance.checkWalletBalance(result[0].user_wallet_id, 1)
+                    .then(async (res) => {
+                        if (res[0] || res[0].balance || res[1] || res[1].balance || res[2] || res[2].balance || res[3] || res[3].balance) {
+                            let total = 0
+                            //ltc , bsc, btc , eth
+                            if (res[0] && (res[0].balance && Number(res[0].balance)) > 0) {
+
+                                total += Number(res[0].balance) * ltcPrice
+
+                                console.log("=======", res[0].balance * ltcPrice)
+                                // if ((Number(res[0].balance * ltcPrice)) > 200) {
+                                //     await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                                //         chat_id: chatId,
+                                //         text: `Your transaction is successful`
+                                //     })
+                                // } else {
+                                //     await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                                //         chat_id: chatId,
+                                //         text: `Your transaction is less than required\nPlease check the amount you have sended`
+                                //     })
+                                // }
+
+                            } else if (res[1] && (res[1].balance && Number(res[1].balance) > 0)) {
+                                total += Number(res[1].balance) * bnbPrice
+                                console.log("@@@@@@@@", res[1].balance * bnbPrice)
+                                // if ((Number(res[1] * bnbPrice)) > 200) {
+                                //     await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                                //         chat_id: chatId,
+                                //         text: `Your transaction is successful`
+                                //     })
+                                // } else {
+                                //     await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                                //         chat_id: chatId,
+                                //         text: `Your transaction is less than required\nPlease check the amount you have sended`
+                                //     })
+                                // }
+
+                            } else if (res[2] && (res[2].balance && Number(res[2].balance)) > 0) {
+                                total += Number(res[2].balance) * btcPrice
+                                console.log("ZZZZZZ", res[2].balance * btcPrice)
+                                // if ((Number(res[2] * btcPrice)) > 200) {
+                                //     await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                                //         chat_id: chatId,
+                                //         text: `Your transaction is successful`
+                                //     })
+                                // } else {
+                                //     await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                                //         chat_id: chatId,
+                                //         text: `Your transaction is less than required\nPlease check the amount you have sended`
+                                //     })
+                                // }
+                            } else if (res[3] && (res[3].balance && Number(res[3].balance) > 0)) {
+                                total += Number(res[3].balance) * ethPrice
+                                console.log("SSSSSS", (Number(res[3].balance * ethPrice)) > 200)
+
+                                // if ((Number(res[3].balance * ethPrice)) > 200) {
+                                //     createUserWallet(wallet_id, res[3].balance * ethPrice, walletAddress, req.body.message.from.id)
+                                //         .then(res => {
+                                //             console.log("resasdasd", res)
+                                //         }).catch(err => {
+                                //             console.log("errror", err)
+                                //         })
+
+                                //     await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                                //         chat_id: chatId,
+                                //         text: `Your transaction is successful`
+                                //     })
+                            }
+                            if (total > 200) {
+                                console.log("TOTAL", total)
+                                // let userAccountAddress
+                                // createUserWallet(wallet_id, res[3].balance * ethPrice, walletAddress, req.body.message.from.id)
+                                //     .then(async (res) => {
+                                //         console.log("resasdasd", res)
+                                //         userAccountAddress = res.accountPublicAddress
+                                //         register_user_id = res.register_user_id
+                                //     }).catch(async (err) => {
+                                //         console.log("errror", err)
+                                //         await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                                //             chat_id: chatId,
+                                //             text: `Server busy try again later...`
+                                //         })
+                                //     })
+                                button.channel.send(`Your transaction is successfull\nCheck your inbox.`)
+                                // await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                                //     chat_id: chatId,
+                                //     text: `Your transaction is successfull\nCheck your inbox.`
+                                // })
+                                //update the sucess with corresponding otp 
+                                let updateWalletInfo = `UPDATE user_wallet SET success ="${1}" WHERE id = ${user_wallet_id}`;
+                                conn.query(updateWalletInfo, async (err, result, fields) => {
+                                    if (err) {
+                                        console.log("ERROADasdasd==========")
+                                    } else {
+                                        console.log("UPDATE CONFIRM")
+                                    }
+                                })
+                                //create group_info with registered_user_id
+                                let groupInfoQuery = "INSERT INTO group_info (id, groupName,groupId,register_user_id) VALUES (?);";
+                                let groupInfoData = [null, firstGroupName, firstGroupId, register_user_id];
+                                conn.query(groupInfoQuery, [groupInfoData], async (err, result, fields) => {
+                                    if (err) {
+                                        console.log("err 2", err)
+                                        button.channel.send(serverError)
+                                        // await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                                        //     chat_id: chatId,
+                                        //     text: `Server busy try again later...`
+                                        // })
+                                    } else {
+                                        await getUserWalletDetails(user_wallet_id)
+                                            .then(async (res) => {
+
+
+                                                await client.users.fetch(user_id).then(user => {
+                                                    user.send(`Transaction was successfull\nYour wallet address is ${res[0].walletAddress}\nDon't share it with anyone.\nJoin here ${DSGroupLink} and claim your token and see gift-box status`)
+                                                }).catch(async (er) => {
+                                                    button.channel.send(serverError)
+                                                })
+
+
+                                                cbMsg.buttonMsg(button.message).then(res => {
+                                                    // console.log("res", res)
+                                                }).catch(er => {
+                                                    console.log("ERROR", er)
+                                                })
+                                            })
+                                    }
+                                })
+                            }
+                            else {
+                                cbMsg.buttonMsg(button.message).then(res => {
+                                    // console.log("res", res)
+                                }).catch(er => {
+                                    console.log("ERROR", er)
+                                })
+                                button.channel.send(`Your transaction is less than required\nPlease check the amount you have sended`)
+                            }
+                        } else {
+                            button.channel.send(serverError)
+                        }
+                    }).catch(async (err) => {
+                        button.channel.send(serverError)
+                    })
+            } else {
+                let reCheckSuccessQuery = `SELECT register_user.*,user_wallet.*
+                            FROM register_user
+                            JOIN user_wallet
+                            ON register_user.user_wallet_id=user_wallet.id
+                            WHERE register_user.user_id = '${user_id}' AND user_wallet.success = ${1};`;
+
+
+                await new Promise((resolve, reject) => {
+                    conn.query(reCheckSuccessQuery, async (err, result) => {
+                        console.log("PAYMENT CONFRIM RECHECK", result)
+                        if (err) {
+                            button.channel.send(serverError)
+                        }
+                        else if (result.length > 0) {
+                            button.channel.send("Your payment is done\nCheck we have inboxed you all details")
+                            resolve()
+                        }
+                        else {
+                            button.channel.send("You are not registered\nPlease follow the process")
+                        }
+                    })
+                })
+
+            }
+        })
+
+    }
+    else if (button.id === 'token') {
+        await walletBalance.checkGroupAccess(user_id).then(async (res) => {
+            if (res.length > 0) {
+
+                let updateQuery = `UPDATE register_user SET token ="${0}" WHERE user_id = '${user_id}'`;
+                // let values = [req.body.message.from.id];
+                const tokenClaimDetails = `SELECT * FROM register_user WHERE user_id LIKE '${user_id}' AND token = '${1}' ;`;
+                //check token claimed or not
+                conn.query(tokenClaimDetails, async (err, result) => {
+                    if (err) {
+                        // return res.status(501).json({
+                        //     msg: "Number checking error",
+                        //     error: err.message
+                        // })
+                        console.log("erro", err)
+                        button.channel.send(`This wallet has already claimed it's token`)
+                    }
+                    else if (result.length > 0) {
+
+                        //update table walletKey status 
+                        conn.query(updateQuery, async (err, result) => {
+                            if (err) {
+                                // return res.status(501).json({
+                                //     msg: "Number checking error",
+                                //     error: err.message
+                                // })
+                                console.log("erro", err)
+                                button.channel.send(serverError)
+                            }
+                            else {
+                                conn.query(updateQuery, async (err, result) => {
+                                    if (err) {
+                                        console.log("err-r", err)
+                                        button.channel.send(serverError)
+                                    }
+                                })
+                                //call token send function 
+                                // sendTestBnb(walletAddress)
+
+                                await button.channel.send(`Token has been sended into your wallet`)
+                                    .then(async (res) => {
+                                        await cbMsg.buttonGift(button.message).then(res => {
+                                            // console.log("res", res)
+                                        }).catch(er => {
+                                            console.log("ERROR", er)
+                                        })
+                                    })
+
+                            }
+                        })
+
+                    }
+                    else {
+                        button.channel.send(`This wallet has already claimed it's token`)
+                    }
+
+                })
+            }
+            else {
+                //kick user
+                await client.users.fetch(user_id).then(user => {
+                    user.send(`You have been kicked.Please Contact with XGX Admin`)
+                }).then(res => {
+
+                    setTimeout(() => {
+                        member = button.channel.guild.members.cache.get(user_id)
+                        console.log("CHECKINg===")
+                        member.kick()
+                    }, 3000);
+                }).catch(er => {
+                    console.log("KICK ERRO", er)
+                })
+            }
+        }).catch(er => {
+            console.log("ERROR", er)
+            button.channel.send(serverError)
+        })
+    }
+    else if (button.id == 'nft') {
+        button.channel.send(`Wait for next round`)
+        cbMsg.buttonGift(button.message).then(res => {
+            // console.log("res", res)
+        }).catch(er => {
+            console.log("ERROR", er)
+        })
+    }
+    else if (button.id == 'watch') {
+        button.channel.send(`Wait for next round`)
+        cbMsg.buttonGift(button.message).then(res => {
+            // console.log("res", res)
+        }).catch(er => {
+            console.log("ERROR", er)
+        })
+    }
+    else if (button.id == 'pc') {
+        button.channel.send(`Wait for next round`)
+        cbMsg.buttonGift(button.message).then(res => {
+            // console.log("res", res)
+        }).catch(er => {
+            console.log("ERROR", er)
+        })
+    }
+    else if (button.id == 'swapToken') {
+        button.channel.send(`Wait for next round`)
+        cbMsg.buttonGift(button.message).then(res => {
+            // console.log("res", res)
+        }).catch(er => {
+            console.log("ERROR", er)
+        })
+    }
+    button.reply.defer();
+})
+
+
+client.login(process.env.DISCORDJS_TOKEN);
+
+
+
 
 // const userRoute = require('./routes/auth/UserAuthRoute')  
 
@@ -145,33 +728,7 @@ const WEBHOOK_URL = SERVER_URL + URI
 // })
 
 
-let btcPrice
-let bnbPrice
-let ltcPrice
-let ethPrice
-async function tokenPrice() {
-    await axios.get(`https://betconix.com/api/v2/tickers`)
-        .then(result => {
-            // console.log("result===",result.)
-            result.data.map(eleme => {
-                if (eleme.ticker_id == 'BTC_USD') {
-                    btcPrice = eleme.last_price
-                }
-                else if (eleme.ticker_id == 'LTC_USD') {
-                    ltcPrice = eleme.last_price
-                }
-                else if (eleme.ticker_id == 'ETH_USD') {
-                    ethPrice = eleme.last_price
-                }
-                else if (eleme.ticker_id == 'BNB_USD') {
-                    bnbPrice = eleme.last_price
-                    console.log(bnbPrice)
-                }
-            })
-        }).catch(er => {
-        })
-}
-tokenPrice()
+
 
 
 async function getTokenBalance(trxHash, chatId) {
@@ -1412,7 +1969,7 @@ async function groupCheck() {
 }
 
 let signalData = ``
-async function assign(key,value){
+async function assign(key, value) {
     signalData += `\n${key} : ${value}`
     return signalData
 }
@@ -1444,23 +2001,23 @@ const init = async () => {
                 //     console.log("H",req.body)
                 // }
 
-                if(req.body.signal){
+                if (req.body.signal) {
                     tradingViewSignal = true
                     text = req.body
-                   
+
                     let obj = req.body
                     // const map = new Map(Object.entries(req.body));
                     // Object.keys(obj).forEach(async function assign(key) {
                     //     console.log(key, obj[key]);
                     //     if(!key == 'signal')
-                      
+
                     // });
-                    Object.keys(obj).forEach(async function (key){
-                        if(key!='signal'){
-                            await assign(key,obj[key]).then(res=>{
-                                console.log("res",res)
-                            }).catch(er=>{
-                                console.log("res",er)
+                    Object.keys(obj).forEach(async function (key) {
+                        if (key != 'signal') {
+                            await assign(key, obj[key]).then(res => {
+                                console.log("res", res)
+                            }).catch(er => {
+                                console.log("res", er)
                             })
                         }
                     });
@@ -1843,8 +2400,8 @@ const init = async () => {
                     console.log("HERE TEXT CANT!!!!!!!!!!!!!!!", req.body)
                     req.body.message.text = "Available comamnd  \n" +
                         "/all - show all available commands \n" +
-                        "/connect - connect to metaMask Wallet \n" 
-                       
+                        "/connect - connect to metaMask Wallet \n"
+
                 }
                 else if (!req.body.my_chat_member) {
 
@@ -1857,9 +2414,9 @@ const init = async () => {
                         "/walletAddress### - balance check example\n"
                     console.log("!!!!!!!!!!!!!!!", req.body)
                 }
-                if(tradingViewSignal==true){
-                    console.log("HERE",req.body)
-                  
+                if (tradingViewSignal == true) {
+                    console.log("HERE", req.body)
+
                     await axios.post(`${TELEGRAM_API}/sendMessage`, {
                         chat_id: secret_groupId,
                         text: signalData,
@@ -2229,26 +2786,26 @@ const init = async () => {
 
 
                                             conn.query(userPrivateWallet, [bitcoinWalletData], async (err, result, fields) => {
-                                                if(err){
-                                                    console.log("BTC Wallet ERROR",err)
+                                                if (err) {
+                                                    console.log("BTC Wallet ERROR", err)
                                                 }
-                                                else{
+                                                else {
                                                     console.log("BTC Wallet CREATE")
                                                 }
                                             })
                                             conn.query(userPrivateWallet, [litecoinWalletData], async (err, result, fields) => {
-                                                if(err){
-                                                    console.log("LTC Wallet ERROR",err)
+                                                if (err) {
+                                                    console.log("LTC Wallet ERROR", err)
                                                 }
-                                                else{
+                                                else {
                                                     console.log("LTC Wallet CREATE")
                                                 }
                                             })
                                             conn.query(userPrivateWallet, [ethWalletData], async (err, result, fields) => {
-                                                if(err){
-                                                    console.log("ETH Wallet ERROR",err)
+                                                if (err) {
+                                                    console.log("ETH Wallet ERROR", err)
                                                 }
-                                                else{
+                                                else {
                                                     console.log("ETH Wallet CREATE")
                                                 }
                                             })
@@ -2311,7 +2868,7 @@ const init = async () => {
                                     if (res[0].balance || res[1].balance || res[2].balance || res[3].balance) {
                                         let total = 0
                                         //ltc , bsc, btc , eth
-                                        if (res[0].balance && Number(res[0].balance) > 0) {
+                                        if (res[0] && (res[0].balance && Number(res[0].balance)) > 0) {
 
                                             total += Number(res[0].balance) * ltcPrice
                                             console.log("=======", res[0].balance * ltcPrice)
@@ -2327,7 +2884,7 @@ const init = async () => {
                                             //     })
                                             // }
 
-                                        } else if (res[1].balance && Number(res[1].balance) > 0) {
+                                        } else if (res[1] && (res[1].balance && Number(res[1].balance)) > 0) {
                                             total += Number(res[1].balance) * bnbPrice
                                             console.log("@@@@@@@@", res[1].balance * bnbPrice)
                                             // if ((Number(res[1] * bnbPrice)) > 200) {
@@ -2342,7 +2899,7 @@ const init = async () => {
                                             //     })
                                             // }
 
-                                        } else if (res[2].balance && Number(res[2].balance) > 0) {
+                                        } else if (res[2] && (res[2].balance && Number(res[2].balance)) > 0) {
                                             total += Number(res[2].balance) * btcPrice
                                             console.log("ZZZZZZ", res[2].balance * btcPrice)
                                             // if ((Number(res[2] * btcPrice)) > 200) {
@@ -2356,7 +2913,7 @@ const init = async () => {
                                             //         text: `Your transaction is less than required\nPlease check the amount you have sended`
                                             //     })
                                             // }
-                                        } else if (res[3].balance && Number(res[3].balance) > 0) {
+                                        } else if (res[3] && (res[3].balance && Number(res[3].balance)) > 0) {
                                             total += Number(res[3].balance) * ethPrice
                                             console.log("SSSSSS", (Number(res[3].balance * ethPrice)) > 200)
 
@@ -2454,26 +3011,26 @@ const init = async () => {
                             JOIN user_wallet
                             ON register_user.user_wallet_id=user_wallet.id
                             WHERE register_user.user_id = '${user_id}' AND user_wallet.success = ${1};`;
-                            
+
 
                             await new Promise((resolve, reject) => {
                                 conn.query(reCheckSuccessQuery, async (err, result) => {
-                                    console.log("PAYMENT CONFRIM RECHECK",result)
+                                    console.log("PAYMENT CONFRIM RECHECK", result)
                                     if (err) {
                                         await axios.post(`${TELEGRAM_API}/sendMessage`, {
                                             chat_id: chatId,
                                             text: `Server busy try again later...`
                                         })
                                     }
-                                    else if(result.length>0){
-                                        
+                                    else if (result.length > 0) {
+
                                         await axios.post(`${TELEGRAM_API}/sendMessage`, {
                                             chat_id: chatId,
                                             text: "Your payment is done\nCheck we have inboxed you all details"
                                         })
                                         resolve()
                                     }
-                                    else{
+                                    else {
                                         await axios.post(`${TELEGRAM_API}/sendMessage`, {
                                             chat_id: chatId,
                                             text: "You are not registered\nPlease follow the process"
@@ -2481,7 +3038,7 @@ const init = async () => {
                                     }
                                 })
                             })
-                            
+
                         }
                     })
 
@@ -2976,8 +3533,8 @@ const init = async () => {
                     initialTest =
                         "Available comamnd  \n" +
                         "/all - show all available commands \n" +
-                        "/connect - connect to metaMask Wallet \n" 
-                       
+                        "/connect - connect to metaMask Wallet \n"
+
                     keyBoard = {
                         "inline_keyboard": [
                             [
@@ -3023,5 +3580,5 @@ app.get("/", (req, res) => {
 
 app.listen(process.env.PORT || 3000, async () => {
     console.log('🚀 app running on port', process.env.PORT || 3000)
-    await init()
+    // await init()
 })
