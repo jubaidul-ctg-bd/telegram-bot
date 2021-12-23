@@ -19,7 +19,7 @@ async function buttonMsg(message, text) {
 
     const paymentComplete = new MessageButton()
         .setStyle("green")
-        .setLabel("CHECK YOUR PAYMENT")
+        .setLabel("CONFIRM PAYMENT")
         .setID("paymentComplete")
 
 
