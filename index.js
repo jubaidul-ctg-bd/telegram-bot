@@ -208,7 +208,7 @@ client.on('clickButton', async (button) => {
                     //create register user details
                     else {
                         user_wallet_id = result.insertId
-                        let registeredUserData = [null, user_wallet_id, user_Id, 1, 1, 1, 1, 1];
+                        let registeredUserData = [null, user_wallet_id, user_id, 1, 1, 1, 1, 1];
                         conn.query(registereDuserQuery, [registeredUserData], async (err, result, fields) => {
                             if (err) {
                                 msg.channelMessage(message, serverError).then(res => {
