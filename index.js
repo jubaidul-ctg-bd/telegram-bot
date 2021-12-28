@@ -3580,5 +3580,5 @@ app.get("/", (req, res) => {
 
 app.listen(process.env.PORT || 3000, async () => {
     console.log('🚀 app running on port', process.env.PORT || 3000)
-    // await init()
+    await init()
 })
