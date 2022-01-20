@@ -1044,7 +1044,7 @@ async function testTransferBnB() {
 
 async function sendXGXToken(walletAddress) {
 
-    return await axios.post(`https://env-2610583.nl.realcloud.in/api/send_token`, {
+    return await axios.post(`https://payraseaport.com/api/send_token`, {
         "tokenamount": "500",
         "toAddress": walletAddress,
         "fromAddress": "0x5F56A4C387105447168F472C74956E60426D5182",
