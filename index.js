@@ -55,7 +55,7 @@ async function tokenPrice() {
     })
     .catch((er) => {});
 }
-await tokenPrice()
+tokenPrice()
 
 async function BTCEQUEVALENTLTC (amount){
   let ltc = ParseFloat(ltcPrice/btcPrice).toPrecision(6)
