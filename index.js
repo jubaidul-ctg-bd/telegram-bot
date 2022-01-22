@@ -2515,7 +2515,7 @@ const init = async () => {
           equivalentFlag = true;
           chatId = req.body.callback_query.message.chat.id;
           await checkBTCBalance((testNet = true), userId)
-            .then((res) => {
+            .then(async (res) => {
               if(!res.data[0].toWalletAddress){
                 text = req.body.callback_query.data;
                 initialTest =
