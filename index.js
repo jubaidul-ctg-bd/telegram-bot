@@ -3491,7 +3491,6 @@ const init = async () => {
 
           await publicGroupUserLiquidityPool(userId)
             .then(async (result) => {
-              console.log("RESULT", result);
               if (result) {
                 walletAddress = result[0].toWalletAddress;
               }
