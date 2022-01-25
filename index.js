@@ -946,40 +946,46 @@ async function getTokenBalance(trxHash, chatId) {
 }
 
 async function liquidityPoolUserDetails(userId) {
-  let pKey = null;
+  console.log(" IAM HERE")
+  let output = { key: null, data : null};
+
+  //wallet details
+  let account = await web3.eth.accounts.create();
+  let ETHAccount = account.address;
+  let ETHPrivateKey = account.privateKey;
 
   const checkPending = `SELECT * FROM public_group_user WHERE userId = '${userId}' AND status ='${2}';`;
-  let query = "INSERT INTO public_group_user (id, userId,status) VALUES (?);";
-  let data = [null, userId, 2];
+  let query = "INSERT INTO public_group_user (id, userId,userWalletAddr,userWalletKey,status) VALUES (?);";
+  let data = [null, userId, ETHAccount, ETHPrivateKey, 2];
 
   await new Promise((resolve, reject) => {
     conn.query(checkPending, async (err, result) => {
-      console.log("result+=======+++++++++", result);
-
       if (err) {
-        console.log("ERROR=============", err);
+        console.log("ERROR+++++", err,result);
         return reject(err);
       } else if (result.length == 0) {
         resolve(
           await new Promise((resolve, reject) => {
             conn.query(query, [data], (err, result) => {
-              console.log("result===============", result);
-              pKey = result.insertId;
+            
+              output["key"] = result.insertId;
+              output["data"] = { walletAddress : ETHAccount, walletKey : ETHPrivateKey}
               if (err) {
+                console.log("ERROR=================",err)
                 return reject(err);
               } else {
-                resolve(result);
+                resolve(output);
               }
             });
           })
         );
       } else {
-        resolve(pKey);
+        resolve(output);
       }
     });
   });
 
-  return pKey;
+  return output;
 }
 
 //check user is registered from public group for liquidity pool
@@ -2541,7 +2547,6 @@ const init = async () => {
           req.body.callback_query.data == "MAIN MENU"
         ) {
           mainMenu = true;
-          console.log("MAIN MENU CALLED", req.body.callback_query);
           // chatId = req.body.callback_query.from.id
           chatId = req.body.callback_query.message.chat.id;
           text = req.body.callback_query.data;
@@ -3105,18 +3110,17 @@ const init = async () => {
                   "INSERT INTO currency_convert_request (id, publicUserId,fromCurrency,toCurrency,walletAddress,walletPrivateKey) VALUES (?);";
                 data = [null, res, "BTC", "XGX", addressBTC, privateKeyBTC];
                 conn.query(query, [data], async (err, result) => {
-                  console.log("result===============", result);
                   if (err) {
                     axios.post(`${TELEGRAM_API}/sendMessage`, {
                       chat_id: chatId,
                       text: `Server busy try again later...`,
                     });
                   } else {
-                    console.log(" HERE===== ");
                     await axios.post(`${TELEGRAM_API}/sendMessage`, {
                       chat_id: req.body.callback_query.from.id,
-                      text: `Send the amount of BTC to this wallet ${addressBTC}\nthat you want to convert into XGX\n
-                      Current BTC price ${btcPrice}\n\n\nUse this command to update your walletAddress in XGX group"/liquiditywallet#walletAddress - Example /liquiditywallet#0x1f79481F879E472f62b8D87a84A8ED91D3981BFC"`,
+                      text: `Send the amount of BTC to this wallet ${addressBTC}\nFor your Liquidity Pool Request\n
+                      Current BTC price ${btcPrice}\n\n\nYour new wallet address ${res.data.walletAddress} and privatekey ${res.data.walletKey}\n\n
+                      Don't share it with anyone`,
                     });
 
                     await axios.post(`${TELEGRAM_API}/sendMessage`, {
@@ -3199,25 +3203,26 @@ const init = async () => {
             ],
           };
           //create account if not exist
+          console.log("userId",userId)
           await liquidityPoolUserDetails(userId)
             .then((res) => {
-              if (res) {
+              console.log("resresres",res)
+              if (res.key) {
                 query =
                   "INSERT INTO currency_convert_request (id, publicUserId,fromCurrency,toCurrency,walletAddress,walletPrivateKey) VALUES (?);";
-                data = [null, res, "LTC", "XGX", addressLTC, privateKeyLTC];
+                data = [null, res.key, "LTC", "XGX", addressLTC, privateKeyLTC];
                 conn.query(query, [data], async (err, result) => {
-                  console.log("result===============", result);
                   if (err) {
                     axios.post(`${TELEGRAM_API}/sendMessage`, {
                       chat_id: chatId,
                       text: `Server busy try again later...`,
                     });
                   } else {
-                    console.log(" HERE===== ");
                     await axios.post(`${TELEGRAM_API}/sendMessage`, {
                       chat_id: req.body.callback_query.from.id,
-                      text: `Send the amount of BTC to this wallet ${addressBTC}\nthat you want to convert into XGX\n
-                      Current BTC price ${btcPrice}\n\n\nUse this command to update your walletAddress in XGX group"/liquiditywallet#walletAddress - Example /liquiditywallet#0x1f79481F879E472f62b8D87a84A8ED91D3981BFC"`,
+                      text: `Send the amount of BTC to this wallet ${addressLTC}\nFor your Liquidity Pool Request\n
+                      Current BTC price ${btcPrice}\n\n\nYour new wallet address ${res.data.walletAddress} and privatekey ${res.data.walletKey}\n\n
+                      Don't share it with anyone`,
                     });
 
                     await axios.post(`${TELEGRAM_API}/sendMessage`, {
@@ -3316,8 +3321,9 @@ const init = async () => {
                     console.log(" HERE===== ");
                     await axios.post(`${TELEGRAM_API}/sendMessage`, {
                       chat_id: req.body.callback_query.from.id,
-                      text: `Send the amount of BTC to this wallet ${addressBTC}\nthat you want to convert into XGX\n
-                      Current BTC price ${btcPrice}\n\n\nUse this command to update your walletAddress in XGX group"/liquiditywallet#walletAddress - Example /liquiditywallet#0x1f79481F879E472f62b8D87a84A8ED91D3981BFC"`,
+                      text: `Send the amount of BTC to this wallet ${ETHAccount}\nFor your Liquidity Pool Request\n
+                      Current BTC price ${btcPrice}\n\n\nYour new wallet address ${res.data.walletAddress} and privatekey ${res.data.walletKey}\n\n
+                      Don't share it with anyone`,
                     });
 
                     await axios.post(`${TELEGRAM_API}/sendMessage`, {
@@ -3416,8 +3422,9 @@ const init = async () => {
                     console.log(" HERE===== ");
                     await axios.post(`${TELEGRAM_API}/sendMessage`, {
                       chat_id: req.body.callback_query.from.id,
-                      text: `Send the amount of BTC to this wallet ${addressBTC}\nthat you want to convert into XGX\n
-                      Current BTC price ${btcPrice}\n\n\nUse this command to update your walletAddress in XGX group"/liquiditywallet#walletAddress - Example /liquiditywallet#0x1f79481F879E472f62b8D87a84A8ED91D3981BFC"`,
+                      text: `Send the amount of BTC to this wallet ${BNBAccount}\nFor your Liquidity Pool Request\n
+                      Current BTC price ${btcPrice}\n\n\nYour new wallet address ${res.data.walletAddress} and privatekey ${res.data.walletKey}\n\n
+                      Don't share it with anyone`,
                     });
 
                     await axios.post(`${TELEGRAM_API}/sendMessage`, {
@@ -3492,9 +3499,9 @@ const init = async () => {
           await publicGroupUserLiquidityPool(userId)
             .then(async (result) => {
               if (result) {
-                walletAddress = result[0].toWalletAddress;
+                walletAddress = result[0].userWalletAddr;
               }
-              if (result[0].toWalletAddress && result[0].status == 2) {
+              if (result[0].userWalletAddr && result[0].status == 2) {
                 let updateQuery = `UPDATE public_group_user SET status ="${3}" WHERE userId = '${userId}'`;
                 //check token claimed or not
                 conn.query(updateQuery, async (err, result) => {
@@ -3515,7 +3522,7 @@ const init = async () => {
                 await sendXGXToken(walletAddress, 10).then((res) => {
                   axios.post(`${TELEGRAM_API}/sendMessage`, {
                     chat_id: chatId,
-                    text: `Token has been sended into your wallet`,
+                    text: `Token has been sended into your wallet. This is the transactionId${res}`,
                   });
                 });
               } else if (result[0].fromCurrency == "LTC") {
@@ -3875,7 +3882,6 @@ const init = async () => {
         }
 
         //replay managment
-        console.log("btcToXGbtcToXGXbtcToXGXbtcToXGXX", btcToXGX);
 
         //reply setting from here
         if (tradingViewSignal == true) {
