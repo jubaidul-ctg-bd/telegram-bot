@@ -946,7 +946,7 @@ async function getTokenBalance(trxHash, chatId) {
 }
 
 async function liquidityPoolUserDetails(userId) {
-  console.log(" IAM HERE")
+  console.log(" I AM HERE")
   let output = { key: null, data : null};
 
   //wallet details
@@ -962,7 +962,7 @@ async function liquidityPoolUserDetails(userId) {
     conn.query(checkPending, async (err, result) => {
       if (err) {
         console.log("ERROR+++++", err,result);
-        return reject(err);
+        return output
       } else if (result.length == 0) {
         resolve(
           await new Promise((resolve, reject) => {
@@ -2372,6 +2372,7 @@ const init = async () => {
         let btcToLtcFlag = false;
         let tokenConvert = false;
         let liquidityPool = false;
+        let customMsgFlag = false;
         let btcToXGX = false;
         let liquidityRequest = false;
         let mainMenu = false;
@@ -2558,14 +2559,8 @@ const init = async () => {
             inline_keyboard: [
               [
                 {
-                  text: "PROCESS TO PAYMENT",
-                  callback_data: "PROCESS TO PAYMENT",
-                },
-              ],
-              [
-                {
-                  text: "CONFIRM PAYMENT",
-                  callback_data: "CONFIRM PAYMENT",
+                  text: "CUSTOM MESSAGE",
+                  callback_data: "CUSTOM MESSAGE",
                 },
               ],
               [
@@ -3105,7 +3100,8 @@ const init = async () => {
           //create account if not exist
           await liquidityPoolUserDetails(userId)
             .then((res) => {
-              if (res) {
+              console.log("output",res)
+              if (res.key) {
                 query =
                   "INSERT INTO currency_convert_request (id, publicUserId,fromCurrency,toCurrency,walletAddress,walletPrivateKey) VALUES (?);";
                 data = [null, res, "BTC", "XGX", addressBTC, privateKeyBTC];
@@ -3131,6 +3127,7 @@ const init = async () => {
                   }
                 });
               } else {
+                console.log(" ELSE EXECUTIED====")
                 chatId = req.body.callback_query.message.chat.id;
                 initialTest =
                   "You are already registered please make the payment and continue the process\n\n\n" +
@@ -3280,7 +3277,7 @@ const init = async () => {
 
           //wallet details
           let account = await web3.eth.accounts.create();
-          let ETHAccount = ccount.address;
+          let ETHAccount = account.address;
           let ETHPrivateKey = account.privateKey;
 
           initialTest =
@@ -3306,7 +3303,7 @@ const init = async () => {
           //create account if not exist
           await liquidityPoolUserDetails(userId)
             .then((res) => {
-              if (res) {
+              if (res.key) {
                 query =
                   "INSERT INTO currency_convert_request (id, publicUserId,fromCurrency,toCurrency,walletAddress,walletPrivateKey) VALUES (?);";
                 data = [null, res, "ETH", "XGX", ETHAccount, ETHPrivateKey];
@@ -3381,7 +3378,7 @@ const init = async () => {
 
           //wallet details
           let account = await web3.eth.accounts.create();
-          let BNBAccount = ccount.address;
+          let BNBAccount = account.address;
           let BNBPrivateKey = account.privateKey;
 
           initialTest =
@@ -3407,7 +3404,7 @@ const init = async () => {
           //create account if not exist
           await liquidityPoolUserDetails(userId)
             .then((res) => {
-              if (res) {
+              if (res.key) {
                 query =
                   "INSERT INTO currency_convert_request (id, publicUserId,fromCurrency,toCurrency,walletAddress,walletPrivateKey) VALUES (?);";
                 data = [null, res, "BNB", "XGX", BNBAccount, BNBPrivateKey];
@@ -3562,6 +3559,74 @@ const init = async () => {
                 text: `Server error`,
               });
             });
+        }
+        //requesting from primary group
+        else if (
+          req.body.callback_query &&
+          req.body.callback_query.message.chat.title == publicGroup &&
+          req.body.callback_query.data == "CUSTOM MESSAGE"
+        ) {
+          customMsgFlag = true
+          console.log("CUSTOM MESSAGE", req.body.callback_query);
+          // chatId = req.body.callback_query.from.id
+          chatId = req.body.callback_query.message.chat.id;
+          text = req.body.callback_query.data;
+          initialTest =
+            "Available comamnd  \n" +
+            "/all - show all available commands \n" +
+            "/connect - connect to metaMask Wallet \n";
+          keyBoard = {
+            inline_keyboard: [
+              [
+                {
+                  text: "PROCESS TO PAYMENT",
+                  callback_data: "PROCESS TO PAYMENT",
+                },
+              ],
+              [
+                {
+                  text: "CONFIRM PAYMENT",
+                  callback_data: "CONFIRM PAYMENT",
+                },
+              ],
+              [
+                {
+                  text: "MAIN MENU",
+                  callback_data: "MAIN MENU",
+                },
+              ],
+            ],
+          };
+        }
+        //requesting from primary group
+        else if (
+          req.body.callback_query &&
+          req.body.callback_query.message.chat.title == publicGroup
+        ) {
+          console.log("Call back public group", req.body.callback_query);
+          // chatId = req.body.callback_query.from.id
+          chatId = req.body.callback_query.message.chat.id;
+          text = req.body.callback_query.data;
+          initialTest =
+            "Available comamnd  \n" +
+            "/all - show all available commands \n" +
+            "/connect - connect to metaMask Wallet \n";
+          keyBoard = {
+            inline_keyboard: [
+              [
+                {
+                  text: "PROCESS TO PAYMENT",
+                  callback_data: "PROCESS TO PAYMENT",
+                },
+              ],
+              [
+                {
+                  text: "CONFIRM PAYMENT",
+                  callback_data: "CONFIRM PAYMENT",
+                },
+              ],
+            ],
+          };
         }
         //requesting from primary group
         else if (
@@ -3802,7 +3867,7 @@ const init = async () => {
           temp = req.body.message.text;
           userId = req.body.message.from.id;
           keyWord = req.body.message.text.split("#")[0].toLowerCase();
-          userWalletAddress = req.body.message.text.split("#")[1].toLowerCase();
+          userWalletAddress = req.body.message.text.split("#")[1]
           console.log("keyWord", keyWord);
           console.log("userWalletAddress", userWalletAddress);
           count = (temp.match(/#/g) || []).length;
@@ -3835,7 +3900,7 @@ const init = async () => {
           temp = req.body.message.text;
           userId = req.body.message.from.id;
           keyWord = req.body.message.text.split("#")[0].toLowerCase();
-          userWalletAddress = req.body.message.text.split("#")[1].toLowerCase();
+          userWalletAddress = req.body.message.text.split("#")[1]
           console.log("keyWord", keyWord);
           console.log("userWalletAddress", userWalletAddress);
           count = (temp.match(/#/g) || []).length;
@@ -3951,6 +4016,19 @@ const init = async () => {
           });
         }
         //token convert to main menu redirect
+        else if (customMsgFlag) {
+          customMsgFlag = false;
+          await axios
+            .post(`${TELEGRAM_API}/sendMessage`, {
+              chat_id: chatId,
+              text: initialTest,
+              reply_markup: JSON.stringify(keyBoard),
+            })
+            .catch((err) => {
+              console.log("I AM DONEeeee");
+            });
+        }
+        //token convert to main menu redirect
         else if (liquidityPool) {
           liquidityPool = false;
           await axios
@@ -4019,7 +4097,7 @@ const init = async () => {
         //btc To XGX reply
         else if (btcToXGX) {
           btcToXGX = false;
-          console.log("I AM HERE");
+          console.log("I AM HERE FINALLY btCTOXGX");
           await axios
             .post(`${TELEGRAM_API}/sendMessage`, {
               chat_id: chatId,
@@ -4251,6 +4329,43 @@ const init = async () => {
             }
           });
         } else if (text == "PROCESS TO PAYMENT") {
+
+          let tempKeyBoard = {
+            inline_keyboard: [
+              [
+                {
+                  text: "CONFIRM PAYMENT",
+                  callback_data: "CONFIRM PAYMENT",
+                },
+              ],
+              [
+                {
+                  text: "MAIN MENU",
+                  callback_data: "MAIN MENU",
+                },
+              ],
+            ],
+          };
+
+          let tempKeyBoard1 = {
+            inline_keyboard: [
+              [
+                {
+                  text: "CONFIRM PAYMENT",
+                  callback_data: "CONFIRM PAYMENT",
+                },
+              ],
+              [
+                {
+                  text: "MAIN MENU",
+                  callback_data: "MAIN MENU",
+                },
+              ],
+            ],
+          };
+
+
+
           let otp = Math.floor(1000 + Math.random() * 9000);
           let user_wallet_id;
 
@@ -4304,6 +4419,7 @@ const init = async () => {
               await axios.post(`${TELEGRAM_API}/sendMessage`, {
                 chat_id: chatId,
                 text: `Your are already registered.\nPlease make the payment and Click on CONFIRM PAYMENT`,
+                reply_markup: JSON.stringify(tempKeyBoard1)
               });
             }
             //did not found user then create userWallet
@@ -4401,7 +4517,7 @@ const init = async () => {
                           await axios.post(`${TELEGRAM_API}/sendMessage`, {
                             chat_id: chatId,
                             text: "Please checkout your inbox.We have provided you with all details",
-                            reply_markup: JSON.stringify(keyBoard),
+                            reply_markup: JSON.stringify(tempKeyBoard),
                           });
 
                           await axios
@@ -4429,6 +4545,35 @@ const init = async () => {
             }
           });
         } else if (text == "CONFIRM PAYMENT") {
+
+          let tempKeyBoard = {
+            inline_keyboard: [
+              [
+                {
+                  text: "CONFIRM PAYMENT",
+                  callback_data: "CONFIRM PAYMENT",
+                },
+              ],
+              [
+                {
+                  text: "MAIN MENU",
+                  callback_data: "MAIN MENU",
+                },
+              ],
+            ],
+          };
+          let tempKeyBoard1 = {
+            inline_keyboard: [
+              [
+                {
+                  text: "MAIN MENU",
+                  callback_data: "MAIN MENU",
+                },
+              ],
+            ],
+          };
+
+
           let user_id = req.body.callback_query.from.id;
           let user_wallet_id;
           let wallet_id;
@@ -4581,6 +4726,13 @@ const init = async () => {
                                     text: `Transaction was successfull\nYour wallet address is ${res[0].walletAddress}\nDon't share it with anyone.\nJoin here ${stageOneGroupUrl} and claim your token and see gift-box status`,
                                   }
                                 );
+
+
+                                await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                                  chat_id: chatId,
+                                  text: `Your transaction is less than required\nPlease check the amount you have sended`,
+                                  reply_markup: JSON.stringify(tempKeyBoard1)
+                                });
                               })
                               .catch(async (er) => {
                                 console.log("CONFRIM PAYMENT ERROR ", er);
@@ -4599,6 +4751,7 @@ const init = async () => {
                       await axios.post(`${TELEGRAM_API}/sendMessage`, {
                         chat_id: chatId,
                         text: `Your transaction is less than required\nPlease check the amount you have sended`,
+                        reply_markup: JSON.stringify(tempKeyBoard)
                       });
                     }
                   } else {
@@ -5276,6 +5429,12 @@ const init = async () => {
 
           keyBoard = {
             inline_keyboard: [
+              [
+                {
+                  text: "CUSTOM MESSAGE",
+                  callback_data: "CUSTOM MESSAGE",
+                },
+              ],
               [
                 {
                   text: "PROCESS TO PAYMENT",
