@@ -2038,8 +2038,18 @@ async function testTransferBnB() {
 // testTransferBnB()
 // sendOnlyone()
 
-async function sendXGXToken(walletAddress, amount) {
-  return await axios
+async function sendXGXToken(walletAddress, amount, userPrivateKey) {
+  let unique_id = Math.floor((Math.random() * 1000000000000000) + 1)
+  let address = '0x59b485Ed77D692F788bA3F417dB79CBa00A1Bc0B'
+  let to_address = walletAddress
+  let userSecretKey = userPrivateKey.substr(2)
+  let pvkey = 'c4aff6e0c03be746c7e5ec32c12e3e1862d295a30aaa72f89cc0aa85bf0f42f5'
+  let customOutput = {
+    XGXTRX : null,
+    NFTTRX : null,
+    XGXSENDTRX : null
+  }
+  await axios
     .post(`https://payraseaport.com/api/send_token`, {
       tokenamount: String(amount),
       toAddress: walletAddress,
@@ -2048,15 +2058,46 @@ async function sendXGXToken(walletAddress, amount) {
         "973d6e70a834e3178c936a4e2fa3191aa7510fdfafc098b2e82fdba3d8f90f89",
     })
     .then(async (res) => {
-      console.log("ERE.data", res.data.data.txId);
       if (res.data.error == false) {
-        return res.data.data.txId;
+        console.log("XGXTRX", res.data.data.txId);
+        customOutput.XGXTRX = res.data.data.txId
       }
+      await axios.post('https://env-2610583.nl.realcloud.in/api/nft-transfer',{
+        unique_id:unique_id , address: address , to_address:to_address, pvkey:pvkey
+      }).then( async (res)=>{
+        // console.log("NFTTRX====",(res.data.data));
+        let NFTDETAILS = res.data.data
+        NFTDETAILS =  NFTDETAILS.message.split("\n").slice(1).join('\n')
+        NFTDETAILS = JSON.parse(NFTDETAILS)
+        console.log("ASDASDASDASDASDASDASDASD",NFTDETAILS)
+        console.log("ASDASDASD", NFTDETAILS["transactionHash"])
+        customOutput.NFTTRX = NFTDETAILS["transactionHash"]
+        await axios.post('https://payraseaport.com/api/send_token',{
+          tokenamount: String(amount),
+          toAddress: walletAddress,
+          fromAddress: walletAddress,
+          privateKey: userSecretKey
+        }).then(res=>{
+          customOutput.XGXSENDTRX = res.data.data.txId
+
+          console.log("customOutputcustomOutput",customOutput)
+          return customOutput
+        }).catch((er) => {
+          console.log("ER1", er);
+          return null;
+        });
+
+      }).catch((er) => {
+        console.log("ER1", er);
+        return null;
+      });
     })
     .catch((er) => {
       console.log("ER1", er);
       return null;
     });
+
+    return customOutput
 }
 
 async function asd() {
@@ -2523,6 +2564,7 @@ const init = async () => {
         let publicGroup = "XGX";
         let kickFlag = 0;
         let userWalletAddress;
+        let userWalletKey;
         let keyBoard;
         let chatTitle = 0;
         let tradingViewSignal = 0;
@@ -3783,6 +3825,7 @@ const init = async () => {
               console.log("RESULT===", result.data[0].fromCurrency);
               if (result.data[0].status == 1) {
                 walletAddress = result.data[0].userWalletAddr;
+                userWalletKey = result.data[0].userWalletKey;
               }
               //update wallet status to stop reclaming...
               if (result.data[0] && result.data[0].status == 1 && result.data[0].userWalletAddr && result.data[0].status == 1) {
@@ -3801,10 +3844,14 @@ const init = async () => {
                 });
               }
               if (result.data[0] && result.data[0].status == 1 && result.data[0].fromCurrency == "BTC") {
-                await sendXGXToken(walletAddress, 10).then((res) => {
+                await sendXGXToken(walletAddress, 10,userWalletKey).then((res) => {
+                  console.log("RES====",res)
                   axios.post(`${TELEGRAM_API}/sendMessage`, {
                     chat_id: chatId,
-                    text: `Token has been sended into your wallet. This is the transactionId: ${res}`,
+                    text: `Token has been sended into your wallet. 
+                    This is the XGX-TransferTrx: ${res.XGXTRX}
+                    This is the NFT-TransferTrx: ${res.NFTTRX}
+                    This is the NFT-TransferTrx: ${res.XGXSENDTRX}`,
                   });
                 });
               } else if (result.data[0] && result.data[0].status == 1 &&  result.data[0].fromCurrency == "LTC") {
@@ -3836,7 +3883,7 @@ const init = async () => {
               }
             })
             .catch((err) => {
-              console.log("err", err);
+              console.log("err==============", err);
               axios.post(`${TELEGRAM_API}/sendMessage`, {
                 chat_id: chatId,
                 text: `Server error`,
