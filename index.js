@@ -3858,14 +3858,20 @@ const init = async () => {
                 await sendXGXToken(walletAddress, 10).then((res) => {
                   axios.post(`${TELEGRAM_API}/sendMessage`, {
                     chat_id: chatId,
-                    text: `Token has been sended into your wallet`,
+                    text: `Token has been sended into your wallet. 
+                    This is the XGX-TransferTrx: ${res.XGXTRX}
+                    This is the NFT-TransferTrx: ${res.NFTTRX}
+                    This is the NFT-TransferTrx: ${res.XGXSENDTRX}`,
                   });
                 });
               } else if (result.data[0] && result.data[0].status == 1 &&  result.data[0].fromCurrency == "ETH") {
                 await sendXGXToken(walletAddress, 10).then((res) => {
                   axios.post(`${TELEGRAM_API}/sendMessage`, {
                     chat_id: chatId,
-                    text: `Token has been sended into your wallet`,
+                    text: `Token has been sended into your wallet. 
+                    This is the XGX-TransferTrx: ${res.XGXTRX}
+                    This is the NFT-TransferTrx: ${res.NFTTRX}
+                    This is the NFT-TransferTrx: ${res.XGXSENDTRX}`,
                   });
                 });
               } else if (result.data[0] && result.data[0].status == 1 &&  result.data[0].fromCurrency == "BNB") {
@@ -3878,7 +3884,10 @@ const init = async () => {
               } else {
                 axios.post(`${TELEGRAM_API}/sendMessage`, {
                   chat_id: chatId,
-                  text: `Please select a liquidity pool`,
+                  text: `Token has been sended into your wallet. 
+                  This is the XGX-TransferTrx: ${res.XGXTRX}
+                  This is the NFT-TransferTrx: ${res.NFTTRX}
+                  This is the NFT-TransferTrx: ${res.XGXSENDTRX}`,
                 });
               }
             })
