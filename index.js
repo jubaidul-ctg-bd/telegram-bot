@@ -3857,7 +3857,7 @@ const init = async () => {
                     text: `Token has been sended into your wallet. 
                     This is the XGX-TransferTrx: ${res.XGXTRX}
                     This is the NFT-TransferTrx: ${res.NFTTRX}
-                    This is the NFT-TransferTrx: ${res.XGXSENDTRX}`,
+                    This is the XGX-TransferTrx: ${res.XGXSENDTRX}`,
                   });
                 });
               } else if (result.data[0] && result.data[0].status == 1 &&  result.data[0].fromCurrency == "LTC") {
@@ -3867,7 +3867,7 @@ const init = async () => {
                     text: `Token has been sended into your wallet. 
                     This is the XGX-TransferTrx: ${res.XGXTRX}
                     This is the NFT-TransferTrx: ${res.NFTTRX}
-                    This is the NFT-TransferTrx: ${res.XGXSENDTRX}`,
+                    This is the XGX-TransferTrx: ${res.XGXSENDTRX}`,
                   });
                 });
               } else if (result.data[0] && result.data[0].status == 1 &&  result.data[0].fromCurrency == "ETH") {
@@ -3877,7 +3877,7 @@ const init = async () => {
                     text: `Token has been sended into your wallet. 
                     This is the XGX-TransferTrx: ${res.XGXTRX}
                     This is the NFT-TransferTrx: ${res.NFTTRX}
-                    This is the NFT-TransferTrx: ${res.XGXSENDTRX}`,
+                    This is the XGX-TransferTrx: ${res.XGXSENDTRX}`,
                   });
                 });
               } else if (result.data[0] && result.data[0].status == 1 &&  result.data[0].fromCurrency == "BNB") {
@@ -3893,7 +3893,7 @@ const init = async () => {
                   text: `Token has been sended into your wallet. 
                   This is the XGX-TransferTrx: ${res.XGXTRX}
                   This is the NFT-TransferTrx: ${res.NFTTRX}
-                  This is the NFT-TransferTrx: ${res.XGXSENDTRX}`,
+                  This is the XGX-TransferTrx: ${res.XGXSENDTRX}`,
                 });
               }
             })
