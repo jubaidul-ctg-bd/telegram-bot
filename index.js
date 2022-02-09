@@ -2062,7 +2062,7 @@ async function sendXGXToken(walletAddress, amount, userPrivateKey) {
         console.log("XGXTRX", res.data.data.txId);
         customOutput.XGXTRX = res.data.data.txId
       }
-      await axios.post('https://env-2610583.nl.realcloud.in/api/nft-transfer',{
+      await axios.post('https://payraseaport.com/api/nft-transfer',{
         unique_id:unique_id , address: address , to_address:to_address, pvkey:pvkey
       }).then( async (res)=>{
         // console.log("NFTTRX====",(res.data.data));
@@ -3851,7 +3851,7 @@ const init = async () => {
               }
               if (result.data[0] && result.data[0].status == 1 && result.data[0].fromCurrency == "BTC") {
                 await sendXGXToken(walletAddress, 10,userWalletKey).then((res) => {
-                  // console.log("RES====",res)
+                  console.log("RES====",res)
                   axios.post(`${TELEGRAM_API}/sendMessage`, {
                     chat_id: chatId,
                     text: `Token has been sended into your wallet. 
