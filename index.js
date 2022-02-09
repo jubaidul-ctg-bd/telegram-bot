@@ -3272,6 +3272,7 @@ const init = async () => {
           //create account if not exist
           await liquidityPoolUserDetails(userId)
             .then((res) => {
+              console.log("ASDASDASDAS",res)
               let currentWork = res.data.filter(element => element.status == 2);
               let checkPendingWork = res.data.filter(element => element.status == 1);
               //first time registration
