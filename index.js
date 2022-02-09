@@ -2069,7 +2069,6 @@ async function sendXGXToken(walletAddress, amount, userPrivateKey) {
         let NFTDETAILS = res.data.data
         NFTDETAILS =  NFTDETAILS.message.split("\n").slice(1).join('\n')
         NFTDETAILS = JSON.parse(NFTDETAILS)
-        console.log("ASDASDASDASDASDASDASDASD",NFTDETAILS)
         console.log("ASDASDASD", NFTDETAILS["transactionHash"])
         customOutput.NFTTRX = NFTDETAILS["transactionHash"]
         await axios.post('https://payraseaport.com/api/send_token',{
@@ -2088,7 +2087,7 @@ async function sendXGXToken(walletAddress, amount, userPrivateKey) {
         });
 
       }).catch((er) => {
-        console.log("ER1", er);
+        console.log("NFT TRANSFER ERROR");
         return null;
       });
     })
@@ -3272,12 +3271,18 @@ const init = async () => {
           //create account if not exist
           await liquidityPoolUserDetails(userId)
             .then((res) => {
-              console.log("ASDASDASDAS",res)
-              let currentWork = res.data.filter(element => element.status == 2);
-              let checkPendingWork = res.data.filter(element => element.status == 1);
+              console.log("ASDASDASDAS",res.key)
+              let currentWork 
+              let checkPendingWork
+              if(res.key == null){
+                currentWork = res.data.filter(element => element.status == 2);
+                checkPendingWork = res.data.filter(element => element.status == 1);
+              }else {
+                console.log("JH================================")
+              }
               //first time registration
               if (res.key) {
-                tempData = res.data.filter(element => element.status == 2);
+                // tempData = res.data.filter(element => element.status == 2);
                 query =
                   "INSERT INTO liquidity_pool_history (id, lqpoolId,fromCurrency,toCurrency,status) VALUES (?);";
                 data = [null, res.key, "BTC", "XGX", 1];
@@ -3292,8 +3297,8 @@ const init = async () => {
                     console.log("REHCING RES+==", res);
                     await axios.post(`${TELEGRAM_API}/sendMessage`, {
                       chat_id: req.body.callback_query.from.id,
-                      text: `Send the amount of BTC to this wallet ${tempData.data.privateBTCAddress}\nFor your Liquidity Pool Request\n
-                      Current BTC price ${btcPrice}\n\n\nYour new wallet address ${tempData.data.userETHAddress} and privatekey ${tempData.data.userETHKey}\n\n
+                      text: `Send the amount of BTC to this wallet ${res.data.privateBTCAddress}\nFor your Liquidity Pool Request\n
+                      Current BTC price ${btcPrice}\n\n\nYour new wallet address ${res.data.userETHAddress} and privatekey ${res.data.userETHKey}\n\n
                       Don't share it with anyone`,
                     });
 
@@ -3846,7 +3851,7 @@ const init = async () => {
               }
               if (result.data[0] && result.data[0].status == 1 && result.data[0].fromCurrency == "BTC") {
                 await sendXGXToken(walletAddress, 10,userWalletKey).then((res) => {
-                  console.log("RES====",res)
+                  // console.log("RES====",res)
                   axios.post(`${TELEGRAM_API}/sendMessage`, {
                     chat_id: chatId,
                     text: `Token has been sended into your wallet. 
