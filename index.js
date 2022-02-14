@@ -1249,7 +1249,7 @@ async function checkWalletBalance(user_wallet_id, chatId, testnet) {
       }
     });
   });
-  console.log("walletAddress", walletAddress);
+  console.log("walletAddress=================", walletAddress);
   let TransDetails;
   let TokenPrice;
   if (testnet == 1) {
@@ -1269,10 +1269,10 @@ async function checkWalletBalance(user_wallet_id, chatId, testnet) {
         //     }).catch(er=>{
         //         console.log("MAIN ERROR====111")
         //     })
-        console.log("res.data.confirmed_balance", res.data.confirmed_balance);
+        console.log("res.data.confirmed_balance", res.data.data.confirmed_balance);
         let balance = {
           // balance: (res.data.final_balance) * 0.00000001,
-          balance: res.data.confirmed_balance,
+          balance: res.data.data.confirmed_balance,
         };
         console.log(
           "hhhhhhhhhhhhhhhhhhhh",
@@ -2031,16 +2031,64 @@ async function transferToken(receiverAddress) {
   });
 }
 
+async function testAPI() {
+  await axios.get(`https://chain.so/api/v2/get_address_balance/LTCTEST/msuj3mydZaaG9Ew5Sgur1TZjvkRsY4dQZC`)
+    .then(async (res) => {
+      // await axios.get(`https://api.coingecko.com/api/v3/coins/litecoin?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false`)
+      //     .then(result => {
+      //         TokenPrice = result.data.market_data.current_price.usd
+      //     }).catch(er=>{
+      //         console.log("MAIN ERROR====111")
+      //     })
+      console.log("res.data.confirmed_balance", res.data.data.confirmed_balance)
+      let balance = {
+        // balance: (res.data.final_balance) * 0.00000001,
+        balance: res.data.confirmed_balance
+      }
+      console.log("hhhhhhhhhhhhhhhhhhhh", res.data, walletAddress[1], balance)
+      return balance
+    }).catch(er => {
+      console.log("ER1")
+      return null
+    })
+}
+
 async function testTransferBnB() {
   transferBnB();
 }
+testAPI()
 //test BNB token send
 // sendTestBnb("0x964A6E4cBbbC5341d19F408ED90CD3fa35E1602D")
 
 // testTransferBnB()
 // sendOnlyone()
 
-async function sendXGXToken(walletAddress, amount, userPrivateKey) {
+async function sendXGXToken(walletAddress,amount) {
+  let customOutput = null
+   return await axios
+    .post(`https://payraseaport.com/api/send_token`, {
+      tokenamount: String(amount),
+      toAddress: walletAddress,
+      fromAddress: "0x5F56A4C387105447168F472C74956E60426D5182",
+      privateKey:
+        "973d6e70a834e3178c936a4e2fa3191aa7510fdfafc098b2e82fdba3d8f90f89",
+    })
+    .then(async (res) => {
+      if (res.data.error == false) {
+        console.log("XGXTRX", res.data.data.txId);
+        customOutput.XGXTRX = res.data.data.txId
+      }
+      customOutput = res.data.data.txId
+      return customOutput
+    })
+    .catch((er) => {
+      console.log("ER1", er);
+      return customOutput
+    });
+
+}
+
+async function sendXGXTokenForNFT(walletAddress, amount, userPrivateKey) {
   let unique_id = Math.floor((Math.random() * 1000000000000000) + 1)
   let address = '0x59b485Ed77D692F788bA3F417dB79CBa00A1Bc0B'
   let to_address = walletAddress
@@ -2363,10 +2411,10 @@ async function userDetails(user_id) {
 
   return new Promise((resolve, reject) => {
     conn.query(userndUserRegisterQuery, (err, result) => {
-      // console.log("result======", result.token)
+      console.log("result======", result.length)
       // console.log("result++++++", result[0].token)
       if (err) {
-        console.log("ERROR==============asdasdasdasdas", err);
+        console.log("ERROR==============asdasdasdasdas", result.length);
         return null;
       } else if (result.length > 0) {
         if (result[0].token == 0) {
@@ -2374,22 +2422,22 @@ async function userDetails(user_id) {
         } else {
           msg1 = "Claim Token";
         }
-        if (result[0].nft == 1) {
+        if (result[0].nft == 0) {
           msg2 = "NFT already claimed";
         } else {
           msg2 = "Claim NFT";
         }
-        if (result[0].watch == 1) {
+        if (result[0].watch == 0) {
           msg3 = "Watch Wallet already claimed";
         } else {
           msg3 = "Claim Watch Wallet";
         }
-        if (result[0].miningPc == 1) {
+        if (result[0].miningPc == 0) {
           msg4 = "Mining PC already claimed";
         } else {
           msg4 = "Claim Mining PC";
         }
-        if (result[0].swapToken == 1) {
+        if (result[0].swapToken == 0) {
           msg5 = "Swap Token already claimed";
         } else {
           msg5 = "Claim Swap Token";
@@ -2539,1589 +2587,2008 @@ const init = async () => {
     .get(`${TELEGRAM_API}/setWebhook?url=${WEBHOOK_URL}`)
     .then((res) => {
       app.post(URI, async (req, res) => {
-        let chatId;
-        let initialTest;
-        let equivalentFlag = false;
-        let btcToLtcFlag = false;
-        let tokenConvert = false;
-        let liquidityPool = false;
-        let customMsgFlag = false;
-        let btcToXGX = false;
-        let liquidityRequest = false;
-        let mainMenu = false;
-        let temp;
-        let tempData = null;
-        let count;
-        let text;
-        let keyWord;
-        let flag = 0;
-        let userId;
-        let stageOneGroupUrl = "https://t.me/+bWXj3yu_x3UzNTJl";
-        let firstGroupName = "XGX Gift-Box";
-        let firstGroupId = "-1001522838826";
-        let publicGroup = "XGX";
-        let kickFlag = 0;
-        let userWalletAddress;
-        let userWalletKey;
-        let keyBoard;
-        let chatTitle = 0;
-        let tradingViewSignal = 0;
-        let secret_groupId = -695063140;
-        let currentGroupId
-        
-        
-        // if(req.body.callback_query){
-        //     console.log("H",req.body.callback_query)
-        //     console.log("H",req.body)
-        // }
-        console.log("req.body.message.text",req.body)
-        // if(req.body.callback_query){
-        //   currentGroupId = req.body.callback_query.message.chat.id
-        // }
-        // if(req.body.message){
-        //   currentGroupId = req.body.message.chat.id
-        // }
-        // axios
-        //     .post(`${TELEGRAM_API}/sendMessage`, {
-        //       chat_id: currentGroupId,
-        //       text: "Unknown group detecte...",
-        // })
-
-
-
-        if (req.body.signal) {
-          tradingViewSignal = true;
-          text = req.body;
-
-          let obj = req.body;
-          // const map = new Map(Object.entries(req.body));
-          // Object.keys(obj).forEach(async function assign(key) {
-          //     console.log(key, obj[key]);
-          //     if(!key == 'signal')
-
-          // });
-          Object.keys(obj).forEach(async function (key) {
-            if (key != "signal") {
-              await assign(key, obj[key])
-                .then((res) => {
-                  console.log("res", res);
-                })
-                .catch((er) => {
-                  console.log("res", er);
-                });
-            }
+        console.log("req.body",req.body)
+        if (req.body.message && req.body.message.group_chat_created) {
+          axios.post(`${TELEGRAM_API}/sendMessage`, {
+            chat_id: req.body.message.chat.id,
+            text: `New group created `,
           });
         }
-        //requesting from firstStage group
-        else if (
-          req.body &&
-          req.body.message &&
-          req.body.message.new_chat_title
-        ) {
-          console.log("I AM HERE");
-          chat_id = req.body.message.chat.id;
-          text = "Group name has been changed";
-          chatTitle = true;
-          // await axios.post(`${TELEGRAM_API}/sendMessage`, {
-          //     chat_id: req.body.callback_query.message.chat.id,
-          //     text: 'Welcome New Member'
-          // }).catch(er => {
-          //     console.log("ERRROR", er)
-          // })
-        } else if (
-          req.body &&
-          req.body.message &&
-          req.body.message.new_chat_member
-        ) {
-          console.log("I AM HERE");
-          chat_id = req.body.message.chat.id;
-          text = "New user has entered to the group";
-          // await axios.post(`${TELEGRAM_API}/sendMessage`, {
-          //     chat_id: req.body.callback_query.message.chat.id,
-          //     text: 'Welcome New Member'
-          // }).catch(er => {
-          //     console.log("ERRROR", er)
-          // })
-        } else if (
-          req.body &&
-          req.body.message &&
-          req.body.message.left_chat_member
-        ) {
-          console.log("I AM THERE");
-          chat_id = req.body.message.chat.id;
-          text = "Someone has left the group";
-          // await axios.post(`${TELEGRAM_API}/sendMessage`, {
-          //     chat_id: req.body.callback_query.message.chat.id,
-          //     text: 'Member Left Channel'
-          // }).catch(er => {
-          //     console.log("ERRROR", er)
-          // })
-        } else if (
-          req.body.callback_query &&
-          req.body.callback_query.message.chat.title == firstGroupName
-        ) {
-          // console.log("group mytest3", req.body)
-          await checkGroupAccess(req.body.callback_query.from.id)
-            .then(async (res) => {
-              if (res.length > 0) {
-                // console.log("res=========================", res)
-                // chatId = req.body.callback_query.from.id
-                chatId = req.body.callback_query.message.chat.id;
-                text = req.body.callback_query.data;
+        else if (req.body.my_chat_member) {
+          axios.post(`${TELEGRAM_API}/sendMessage`, {
+            chat_id: req.body.my_chat_member.chat.id,
+            text: `Server ping`,
+          });
+          console.log("SERVER PING!!!")
+        }
+        else if (req.body.message || req.body.callback_query) {
+          let chatId;
+          let initialTest;
+          let equivalentFlag = false;
+          let btcToLtcFlag = false;
+          let tokenConvert = false;
+          let liquidityPool = false;
+          let customMsgFlag = false;
+          let btcToXGX = false;
+          let liquidityRequest = false;
+          let mainMenu = false;
+          let temp;
+          let tempData = null;
+          let count;
+          let text;
+          let keyWord;
+          let flag = 0;
+          let userId;
+          let stageOneGroupUrl = "https://t.me/+bWXj3yu_x3UzNTJl";
+          let firstGroupName = "XGX Gift-Box";
+          let firstGroupId = "-1001522838826";
+          let publicGroup = "XGX";
+          let kickFlag = 0;
+          let giftBoxChannel = false;
+          let userWalletAddress;
+          let userWalletKey;
+          let keyBoard;
+          let chatTitle = 0;
+          let tradingViewSignal = 0;
+          let secret_groupId = -695063140;
+          let currentGroupId
 
-                keyBoard = {
-                  inline_keyboard: [
-                    [
-                      {
-                        text: "Claim Token",
-                        callback_data: "Claim Token",
-                      },
-                    ],
-                    [
-                      {
-                        text: "Claim NFT",
-                        callback_data: "Claim NFT",
-                      },
-                    ],
-                    [
-                      {
-                        text: "Claim Watch Wallet",
-                        callback_data: "Claim Watch Wallet",
-                      },
-                    ],
-                    [
-                      {
-                        text: "Claim Mining PC",
-                        callback_data: "Claim Mining PC",
-                      },
-                    ],
-                    [
-                      {
-                        text: "Claim Swap Token Distribution",
-                        callback_data: "Claim Swap Token Distribution",
-                      },
-                    ],
-                    [
-                      {
-                        text: "Check Wallet Token",
-                        callback_data: "Check Wallet Token",
-                      },
-                    ],
-                  ],
-                };
-              } else {
-                console.log("BANNING UNKWNON GROUP MEMBER", req.body);
-                await axios
-                  .post(`${TELEGRAM_API}/banChatMember`, {
-                    chat_id: req.body.callback_query.message.chat.id,
-                    user_id: req.body.callback_query.from.id,
-                    text: req.body.callback_query.message.text,
+          let PlatinumGroup = { id: '-615491856', name: 'XGX-Platinum', link: 'https://t.me/+vBlsqUqsOIsxYTI1' }
+          let GoldGroup = { id: '-463538098', name: 'XGX-Gold', link: 'https://t.me/+UDww4gKWPL5jOTA1' }
+          let TitaniumGroup = { id: null, name: 'XGX-Titanium', link: null }
+          let SilverGroup = { id: '-621196087', name: 'XGX-Silver', link: 'https://t.me/+gKTNXsgUTPgyN2I9' }
+          let BronzeGroup = { id: '-743828752', name: 'XGX-Bronze', link: 'https://t.me/+hjBiqKTIcaViN2Y1' }
+
+
+          // if(req.body.callback_query){
+          //     console.log("H",req.body.callback_query)
+          //     console.log("H",req.body)
+          // }
+          console.log("req.body.message.text", req.body)
+          // console.log("req.body.message.text=====", req.body.callback_query.message.chat)
+          // if(req.body.callback_query){
+          //   currentGroupId = req.body.callback_query.message.chat.id
+          // }
+          // if(req.body.message){
+          //   currentGroupId = req.body.message.chat.id
+          // }
+          // axios
+          //     .post(`${TELEGRAM_API}/sendMessage`, {
+          //       chat_id: currentGroupId,
+          //       text: "Unknown group detecte...",
+          // })
+
+
+
+          if (req.body.signal) {
+            tradingViewSignal = true;
+            text = req.body;
+
+            let obj = req.body;
+            // const map = new Map(Object.entries(req.body));
+            // Object.keys(obj).forEach(async function assign(key) {
+            //     console.log(key, obj[key]);
+            //     if(!key == 'signal')
+
+            // });
+            Object.keys(obj).forEach(async function (key) {
+              if (key != "signal") {
+                await assign(key, obj[key])
+                  .then((res) => {
+                    console.log("res", res);
                   })
-                  .catch((err) => {
-                    console.log("WTFFFF", err);
+                  .catch((er) => {
+                    console.log("res", er);
                   });
-                kickFlag = true;
               }
-            })
-            .catch(async (er) => {
-              console.log("ANOTHER RERE", er.data);
-              // console.log("=====",req.body)
-              // console.log("++++++++",req.body.messsage.chat)
-              // await axios.post(`${TELEGRAM_API}/banChatMember`, {
-              //     chat_id: req.body.callback_query.message.chat.id,
-              //     user_id: req.body.callback_query.from.id,
-              //     text: req.body.callback_query.message.text
-              // })
-              // kickFlag = true
             });
-        } else if (
-          req.body.callback_query &&
-          req.body.callback_query.message.chat.title == publicGroup &&
-          req.body.callback_query.data == "MAIN MENU"
-        ) {
-          mainMenu = true;
-          // chatId = req.body.callback_query.from.id
-          chatId = req.body.callback_query.message.chat.id;
-          text = req.body.callback_query.data;
-          initialTest =
-            "Available comamnd  \n" +
-            "/all - show all available commands \n" +
-            "/connect - connect to metaMask Wallet \n";
-          keyBoard = {
-            inline_keyboard: [
-              [
-                {
-                  text: "CUSTOM MESSAGE",
-                  callback_data: "CUSTOM MESSAGE",
-                },
-              ],
-              [
-                {
-                  text: "CONVERT CURRENCY",
-                  callback_data: "CONVERT CURRENCY",
-                },
-              ],
-              [
-                {
-                  text: "LIQUIDITY POOL",
-                  callback_data: "LIQUIDITY POOL",
-                },
-              ],
-            ],
-          };
-        } else if (
-          req.body.callback_query &&
-          req.body.callback_query.message.chat.title == publicGroup &&
-          req.body.callback_query.data == "GET EQUIVALENT TOKEN"
-        ) {
-          let tempBlNC;
-          console.log(" GET EQUIVALENT TOKEN CALLED");
-          userId = req.body.callback_query.from.id;
-          equivalentFlag = true;
-          chatId = req.body.callback_query.message.chat.id;
-          await checkBTCBalance((testNet = true), userId)
-            .then(async (res) => {
-              // user following process
-              if (res.data.length > 0) {
-                if (!res.data[0].toWalletAddress) {
+          }
+          //requesting from firstStage group
+          else if (
+            req.body &&
+            req.body.message &&
+            req.body.message.new_chat_title
+          ) {
+            console.log("I AM HERE");
+            chat_id = req.body.message.chat.id;
+            text = "Group name has been changed";
+            chatTitle = true;
+            // await axios.post(`${TELEGRAM_API}/sendMessage`, {
+            //     chat_id: req.body.callback_query.message.chat.id,
+            //     text: 'Welcome New Member'
+            // }).catch(er => {
+            //     console.log("ERRROR", er)
+            // })
+          } else if (
+            req.body &&
+            req.body.message &&
+            req.body.message.new_chat_member
+          ) {
+            console.log("I AM HERE");
+            chat_id = req.body.message.chat.id;
+            text = "New user has entered to the group";
+            // await axios.post(`${TELEGRAM_API}/sendMessage`, {
+            //     chat_id: req.body.callback_query.message.chat.id,
+            //     text: 'Welcome New Member'
+            // }).catch(er => {
+            //     console.log("ERRROR", er)
+            // })
+          } else if (
+            req.body &&
+            req.body.message &&
+            req.body.message.left_chat_member
+          ) {
+            console.log("SOMEONE LEFT");
+          } 
+          //platinum group 
+          else if (
+            req.body.callback_query &&
+            req.body.callback_query.message.chat.title == PlatinumGroup.name
+          ) {
+            console.log("PLATINUM GROUP",)
+            await checkGroupAccess(req.body.callback_query.from.id)
+              .then(async (res) => {
+                if (res.length > 0) {
+                  // console.log("res=========================", res)
+                  // chatId = req.body.callback_query.from.id
+                  chatId = req.body.callback_query.message.chat.id;
                   text = req.body.callback_query.data;
-                  initialTest =
-                    `Please update your walletAddress\n\n` +
-                    "Available comamnd  \n" +
-                    "/all - show all available commands \n" +
-                    "/connect - connect to metaMask Wallet \n";
+
                   keyBoard = {
                     inline_keyboard: [
                       [
                         {
-                          text: "MAIN MENU",
-                          callback_data: "MAIN MENU",
+                          text: "Claim Token",
+                          callback_data: "Claim Token",
                         },
                       ],
-                    ],
-                  };
-                } else if (res.balance == 0) {
-                  text = req.body.callback_query.data;
-                  initialTest =
-                    `Current account balance is ${res.balance} BTC please send the amount that you want to convert into LTC\n\n` +
-                    "Available comamnd  \n" +
-                    "/all - show all available commands \n" +
-                    "/connect - connect to metaMask Wallet \n";
-                  keyBoard = {
-                    inline_keyboard: [
                       [
                         {
-                          text: "MAIN MENU",
-                          callback_data: "MAIN MENU",
+                          text: "Claim NFT",
+                          callback_data: "Claim NFT",
+                        },
+                      ],
+                      [
+                        {
+                          text: "Claim Watch Wallet",
+                          callback_data: "Claim Watch Wallet",
+                        },
+                      ],
+                      [
+                        {
+                          text: "Claim Mining PC",
+                          callback_data: "Claim Mining PC",
+                        },
+                      ],
+                      [
+                        {
+                          text: "Claim Swap Token Distribution",
+                          callback_data: "Claim Swap Token Distribution",
+                        },
+                      ],
+                      [
+                        {
+                          text: "Check Wallet Token",
+                          callback_data: "Check Wallet Token",
                         },
                       ],
                     ],
                   };
                 } else {
-                  // console.log("checkBTCBalance",res)
-                  if (res.data[0].fromCurrency == "LTC") {
-                    axios.post(`${TELEGRAM_API}/sendMessage`, {
-                      chat_id: chatId,
-                      text: `LTC SENDED`,
+                  console.log("BANNING UNKWNON GROUP MEMBER", req.body);
+                  await axios
+                    .post(`${TELEGRAM_API}/banChatMember`, {
+                      chat_id: req.body.callback_query.message.chat.id,
+                      user_id: req.body.callback_query.from.id,
+                      text: req.body.callback_query.message.text,
                     })
-                    // tempBlNC = await LTCEQUEVALENTBTC(res.balance);
-                    // transferBTC
-                    //   .send(
-                    //     "19x2TCT494sxvJVGXNwzvqZdjRCi9NJBcG",
-                    //     "c1ac5795b58070494719940a96180d4453c87294a1f28836223018fde4eec79e",
-                    //     res.data[0].toWalletAddress,
-                    //     tempBlNC,
-                    //     0
-                    //   )
-                    //   .then((res) => {
-                    //     if (res.txId) {
-                    //       let updateQuery = `UPDATE public_group_user SET status ="${1}" WHERE userId = '${userId}'`;
-                    //       conn.query(updateQuery, async (err, result) => { });
-
-                    //       text = req.body.callback_query.data;
-                    //       initialTest =
-                    //         `${tempBlNC} BTC Equivalent LTC has been sended into your wallet\n\n` +
-                    //         `Check details from the transactionId ${res.txId}\n\n` +
-                    //         "Available comamnd  \n" +
-                    //         "/all - show all available commands \n" +
-                    //         "/connect - connect to metaMask Wallet \n";
-                    //       keyBoard = {
-                    //         inline_keyboard: [
-                    //           [
-                    //             {
-                    //               text: "MAIN MENU",
-                    //               callback_data: "MAIN MENU",
-                    //             },
-                    //           ],
-                    //         ],
-                    //       };
-                    //     } else {
-                    //       text = req.body.callback_query.data;
-                    //       initialTest =
-                    //         `Something wrong contract with the group admin\n\n` +
-                    //         "Available comamnd  \n" +
-                    //         "/all - show all available commands \n" +
-                    //         "/connect - connect to metaMask Wallet \n";
-                    //       keyBoard = {
-                    //         inline_keyboard: [
-                    //           [
-                    //             {
-                    //               text: "MAIN MENU",
-                    //               callback_data: "MAIN MENU",
-                    //             },
-                    //           ],
-                    //         ],
-                    //       };
-                    //     }
-                    //   })
-                    //   .catch((err) => {
-                    //     text = req.body.callback_query.data;
-                    //     initialTest =
-                    //       `Something wrong contract with the group admin\n\n` +
-                    //       "Available comamnd  \n" +
-                    //       "/all - show all available commands \n" +
-                    //       "/connect - connect to metaMask Wallet \n";
-                    //     keyBoard = {
-                    //       inline_keyboard: [
-                    //         [
-                    //           {
-                    //             text: "MAIN MENU",
-                    //             callback_data: "MAIN MENU",
-                    //           },
-                    //         ],
-                    //       ],
-                    //     };
-
-                    //     console.log("ERROR+++", err);
-                    //   });
-                  } else if (res.data[0].fromCurrency == "BTC") {
-                    axios.post(`${TELEGRAM_API}/sendMessage`, {
-                      chat_id: chatId,
-                      text: `BTC SENDED`,
-                    })
-                    // tempBlNC = await BTCEQUEVALENTLTC(res.balance);
-                    // transferLTC
-                    //   .send(
-                    //     "LXu1ALV3af3PbySCJEVHqQKU65Ggg4WCJJ",
-                    //     "1254c04b73279a21633a18d84fafc19fefbff72406d29ab389698b42b119c607",
-                    //     res.data[0].toWalletAddress,
-                    //     tempBlNC,
-                    //     0
-                    //   )
-                    //   .then((res) => {
-                    //     if (res.txId) {
-                    //       let updateQuery = `UPDATE public_group_user SET status ="${1}" WHERE userId = '${userId}'`;
-                    //       conn.query(updateQuery, async (err, result) => { });
-
-                    //       text = req.body.callback_query.data;
-                    //       initialTest =
-                    //         `${tempBlNC} LTC Equivalent BTC has been sended into your wallet\n\n` +
-                    //         `Check details from the transactionId ${res.txId}\n\n` +
-                    //         "Available comamnd  \n" +
-                    //         "/all - show all available commands \n" +
-                    //         "/connect - connect to metaMask Wallet \n";
-                    //       keyBoard = {
-                    //         inline_keyboard: [
-                    //           [
-                    //             {
-                    //               text: "MAIN MENU",
-                    //               callback_data: "MAIN MENU",
-                    //             },
-                    //           ],
-                    //         ],
-                    //       };
-                    //     } else {
-                    //       text = req.body.callback_query.data;
-                    //       initialTest =
-                    //         `Something wrong contract with the group admin\n\n` +
-                    //         "Available comamnd  \n" +
-                    //         "/all - show all available commands \n" +
-                    //         "/connect - connect to metaMask Wallet \n";
-                    //       keyBoard = {
-                    //         inline_keyboard: [
-                    //           [
-                    //             {
-                    //               text: "MAIN MENU",
-                    //               callback_data: "MAIN MENU",
-                    //             },
-                    //           ],
-                    //         ],
-                    //       };
-                    //     }
-                    //   })
-                    //   .catch((err) => {
-                    //     text = req.body.callback_query.data;
-                    //     initialTest =
-                    //       `Something wrong contract with the group admin\n\n` +
-                    //       "Available comamnd  \n" +
-                    //       "/all - show all available commands \n" +
-                    //       "/connect - connect to metaMask Wallet \n";
-                    //     keyBoard = {
-                    //       inline_keyboard: [
-                    //         [
-                    //           {
-                    //             text: "MAIN MENU",
-                    //             callback_data: "MAIN MENU",
-                    //           },
-                    //         ],
-                    //       ],
-                    //     };
-
-                    //     console.log("ERROR+++", err);
-                    //   });
-                  }
+                    .catch((err) => {
+                      console.log("WTFFFF", err);
+                    });
+                  kickFlag = true;
                 }
-              } else {
-                // use is not following the process
-                initialTest =
-                  "Available comamnd  \n" +
-                  "/all - show all available commands \n" +
-                  "/connect - connect to metaMask Wallet \n";
+              })
+              .catch(async (er) => {
+                console.log("ANOTHER RERE", er.data);
+                // console.log("=====",req.body)
+                // console.log("++++++++",req.body.messsage.chat)
+                // await axios.post(`${TELEGRAM_API}/banChatMember`, {
+                //     chat_id: req.body.callback_query.message.chat.id,
+                //     user_id: req.body.callback_query.from.id,
+                //     text: req.body.callback_query.message.text
+                // })
+                // kickFlag = true
+              });
+          } 
+          //gold group
+          else if (
+            req.body.callback_query &&
+            req.body.callback_query.message.chat.title == GoldGroup.name
+          ) {
+            console.log("PLATINUM GROUP",)
+            await checkGroupAccess(req.body.callback_query.from.id)
+              .then(async (res) => {
+                if (res.length > 0) {
+                  // console.log("res=========================", res)
+                  // chatId = req.body.callback_query.from.id
+                  chatId = req.body.callback_query.message.chat.id;
+                  text = req.body.callback_query.data;
 
-                keyBoard = {
-                  inline_keyboard: [
-                    [
-                      {
-                        text: "CUSTOM MESSAGE",
-                        callback_data: "CUSTOM MESSAGE",
-                      },
+                  keyBoard = {
+                    inline_keyboard: [
+                      [
+                        {
+                          text: "Claim Token",
+                          callback_data: "Claim Token",
+                        },
+                      ],
+                      [
+                        {
+                          text: "Claim NFT",
+                          callback_data: "Claim NFT",
+                        },
+                      ],
+                      [
+                        {
+                          text: "Claim Watch Wallet",
+                          callback_data: "Claim Watch Wallet",
+                        },
+                      ],
+                      [
+                        {
+                          text: "Claim Mining PC",
+                          callback_data: "Claim Mining PC",
+                        },
+                      ],
+                      [
+                        {
+                          text: "Claim Swap Token Distribution",
+                          callback_data: "Claim Swap Token Distribution",
+                        },
+                      ],
+                      [
+                        {
+                          text: "Check Wallet Token",
+                          callback_data: "Check Wallet Token",
+                        },
+                      ],
                     ],
-                    [
-                      {
-                        text: "CONVERT CURRENCY",
-                        callback_data: "CONVERT CURRENCY",
-                      },
+                  };
+                } else {
+                  console.log("BANNING UNKWNON GROUP MEMBER", req.body);
+                  await axios
+                    .post(`${TELEGRAM_API}/banChatMember`, {
+                      chat_id: req.body.callback_query.message.chat.id,
+                      user_id: req.body.callback_query.from.id,
+                      text: req.body.callback_query.message.text,
+                    })
+                    .catch((err) => {
+                      console.log("WTFFFF", err);
+                    });
+                  kickFlag = true;
+                }
+              })
+              .catch(async (er) => {
+                console.log("ANOTHER RERE", er.data);
+                // console.log("=====",req.body)
+                // console.log("++++++++",req.body.messsage.chat)
+                // await axios.post(`${TELEGRAM_API}/banChatMember`, {
+                //     chat_id: req.body.callback_query.message.chat.id,
+                //     user_id: req.body.callback_query.from.id,
+                //     text: req.body.callback_query.message.text
+                // })
+                // kickFlag = true
+              });
+          } 
+          //titanium group
+          else if (
+            req.body.callback_query &&
+            req.body.callback_query.message.chat.title == TitaniumGroup.name
+          ) {
+            console.log("PLATINUM GROUP",)
+            await checkGroupAccess(req.body.callback_query.from.id)
+              .then(async (res) => {
+                if (res.length > 0) {
+                  // console.log("res=========================", res)
+                  // chatId = req.body.callback_query.from.id
+                  chatId = req.body.callback_query.message.chat.id;
+                  text = req.body.callback_query.data;
+
+                  keyBoard = {
+                    inline_keyboard: [
+                      [
+                        {
+                          text: "Claim Token",
+                          callback_data: "Claim Token",
+                        },
+                      ],
+                      [
+                        {
+                          text: "Claim NFT",
+                          callback_data: "Claim NFT",
+                        },
+                      ],
+                      [
+                        {
+                          text: "Claim Watch Wallet",
+                          callback_data: "Claim Watch Wallet",
+                        },
+                      ],
+                      [
+                        {
+                          text: "Claim Mining PC",
+                          callback_data: "Claim Mining PC",
+                        },
+                      ],
+                      [
+                        {
+                          text: "Claim Swap Token Distribution",
+                          callback_data: "Claim Swap Token Distribution",
+                        },
+                      ],
+                      [
+                        {
+                          text: "Check Wallet Token",
+                          callback_data: "Check Wallet Token",
+                        },
+                      ],
                     ],
-                    [
-                      {
-                        text: "LIQUIDITY POOL",
-                        callback_data: "LIQUIDITY POOL",
-                      },
+                  };
+                } else {
+                  console.log("BANNING UNKWNON GROUP MEMBER", req.body);
+                  await axios
+                    .post(`${TELEGRAM_API}/banChatMember`, {
+                      chat_id: req.body.callback_query.message.chat.id,
+                      user_id: req.body.callback_query.from.id,
+                      text: req.body.callback_query.message.text,
+                    })
+                    .catch((err) => {
+                      console.log("WTFFFF", err);
+                    });
+                  kickFlag = true;
+                }
+              })
+              .catch(async (er) => {
+                console.log("ANOTHER RERE", er.data);
+                // console.log("=====",req.body)
+                // console.log("++++++++",req.body.messsage.chat)
+                // await axios.post(`${TELEGRAM_API}/banChatMember`, {
+                //     chat_id: req.body.callback_query.message.chat.id,
+                //     user_id: req.body.callback_query.from.id,
+                //     text: req.body.callback_query.message.text
+                // })
+                // kickFlag = true
+              });
+          } 
+          //silver group
+          else if (
+            req.body.callback_query &&
+            req.body.callback_query.message.chat.title == SilverGroup.name
+          ) {
+            console.log("PLATINUM GROUP",)
+            await checkGroupAccess(req.body.callback_query.from.id)
+              .then(async (res) => {
+                if (res.length > 0) {
+                  // console.log("res=========================", res)
+                  // chatId = req.body.callback_query.from.id
+                  chatId = req.body.callback_query.message.chat.id;
+                  text = req.body.callback_query.data;
+
+                  keyBoard = {
+                    inline_keyboard: [
+                      [
+                        {
+                          text: "Claim Token",
+                          callback_data: "Claim Token",
+                        },
+                      ],
+                      [
+                        {
+                          text: "Claim NFT",
+                          callback_data: "Claim NFT",
+                        },
+                      ],
+                      [
+                        {
+                          text: "Claim Watch Wallet",
+                          callback_data: "Claim Watch Wallet",
+                        },
+                      ],
+                      [
+                        {
+                          text: "Claim Mining PC",
+                          callback_data: "Claim Mining PC",
+                        },
+                      ],
+                      [
+                        {
+                          text: "Claim Swap Token Distribution",
+                          callback_data: "Claim Swap Token Distribution",
+                        },
+                      ],
+                      [
+                        {
+                          text: "Check Wallet Token",
+                          callback_data: "Check Wallet Token",
+                        },
+                      ],
                     ],
-                  ],
-                };
+                  };
+                } else {
+                  console.log("BANNING UNKWNON GROUP MEMBER", req.body);
+                  await axios
+                    .post(`${TELEGRAM_API}/banChatMember`, {
+                      chat_id: req.body.callback_query.message.chat.id,
+                      user_id: req.body.callback_query.from.id,
+                      text: req.body.callback_query.message.text,
+                    })
+                    .catch((err) => {
+                      console.log("WTFFFF", err);
+                    });
+                  kickFlag = true;
+                }
+              })
+              .catch(async (er) => {
+                console.log("ANOTHER RERE", er.data);
+                // console.log("=====",req.body)
+                // console.log("++++++++",req.body.messsage.chat)
+                // await axios.post(`${TELEGRAM_API}/banChatMember`, {
+                //     chat_id: req.body.callback_query.message.chat.id,
+                //     user_id: req.body.callback_query.from.id,
+                //     text: req.body.callback_query.message.text
+                // })
+                // kickFlag = true
+              });
+          } 
+          //bronze group
+          else if (
+            req.body.callback_query &&
+            req.body.callback_query.message.chat.title == BronzeGroup.name
+          ) {
+            console.log("PLATINUM GROUP",)
+            await checkGroupAccess(req.body.callback_query.from.id)
+              .then(async (res) => {
+                if (res.length > 0) {
+                  // console.log("res=========================", res)
+                  // chatId = req.body.callback_query.from.id
+                  chatId = req.body.callback_query.message.chat.id;
+                  text = req.body.callback_query.data;
+
+                  keyBoard = {
+                    inline_keyboard: [
+                      [
+                        {
+                          text: "Claim Token",
+                          callback_data: "Claim Token",
+                        },
+                      ],
+                      [
+                        {
+                          text: "Claim NFT",
+                          callback_data: "Claim NFT",
+                        },
+                      ],
+                      [
+                        {
+                          text: "Claim Watch Wallet",
+                          callback_data: "Claim Watch Wallet",
+                        },
+                      ],
+                      [
+                        {
+                          text: "Claim Mining PC",
+                          callback_data: "Claim Mining PC",
+                        },
+                      ],
+                      [
+                        {
+                          text: "Claim Swap Token Distribution",
+                          callback_data: "Claim Swap Token Distribution",
+                        },
+                      ],
+                      [
+                        {
+                          text: "Check Wallet Token",
+                          callback_data: "Check Wallet Token",
+                        },
+                      ],
+                    ],
+                  };
+                } else {
+                  console.log("BANNING UNKWNON GROUP MEMBER", req.body);
+                  await axios
+                    .post(`${TELEGRAM_API}/banChatMember`, {
+                      chat_id: req.body.callback_query.message.chat.id,
+                      user_id: req.body.callback_query.from.id,
+                      text: req.body.callback_query.message.text,
+                    })
+                    .catch((err) => {
+                      console.log("WTFFFF", err);
+                    });
+                  kickFlag = true;
+                }
+              })
+              .catch(async (er) => {
+                console.log("ANOTHER RERE", er.data);
+                // console.log("=====",req.body)
+                // console.log("++++++++",req.body.messsage.chat)
+                // await axios.post(`${TELEGRAM_API}/banChatMember`, {
+                //     chat_id: req.body.callback_query.message.chat.id,
+                //     user_id: req.body.callback_query.from.id,
+                //     text: req.body.callback_query.message.text
+                // })
+                // kickFlag = true
+              });
+          } 
+          else if (
+            req.body.callback_query &&
+            req.body.callback_query.message.chat.title == publicGroup &&
+            req.body.callback_query.data == "MAIN MENU"
+          ) {
+            mainMenu = true;
+            // chatId = req.body.callback_query.from.id
+            chatId = req.body.callback_query.message.chat.id;
+            text = req.body.callback_query.data;
+            initialTest =
+              "Available comamnd  \n" +
+              "/all - show all available commands \n" +
+              "/connect - connect to metaMask Wallet \n";
+            keyBoard = {
+              inline_keyboard: [
+                [
+                  {
+                    text: "PARTNERSHIP",
+                    callback_data: "PARTNERSHIP",
+                  },
+                ],
+                [
+                  {
+                    text: "CONVERT CURRENCY",
+                    callback_data: "CONVERT CURRENCY",
+                  },
+                ],
+                [
+                  {
+                    text: "LIQUIDITY POOL",
+                    callback_data: "LIQUIDITY POOL",
+                  },
+                ],
+              ],
+            };
+          } else if (
+            req.body.callback_query &&
+            req.body.callback_query.message.chat.title == publicGroup &&
+            req.body.callback_query.data == "GET EQUIVALENT TOKEN"
+          ) {
+            let tempBlNC;
+            console.log(" GET EQUIVALENT TOKEN CALLED");
+            userId = req.body.callback_query.from.id;
+            equivalentFlag = true;
+            chatId = req.body.callback_query.message.chat.id;
+            await checkBTCBalance((testNet = true), userId)
+              .then(async (res) => {
+                // user following process
+                if (res.data.length > 0) {
+                  if (!res.data[0].toWalletAddress) {
+                    text = req.body.callback_query.data;
+                    initialTest =
+                      `Please update your walletAddress\n\n` +
+                      "Available comamnd  \n" +
+                      "/all - show all available commands \n" +
+                      "/connect - connect to metaMask Wallet \n";
+                    keyBoard = {
+                      inline_keyboard: [
+                        [
+                          {
+                            text: "MAIN MENU",
+                            callback_data: "MAIN MENU",
+                          },
+                        ],
+                      ],
+                    };
+                  } else if (res.balance == 0) {
+                    text = req.body.callback_query.data;
+                    initialTest =
+                      `Current account balance is ${res.balance} BTC please send the amount that you want to convert into LTC\n\n` +
+                      "Available comamnd  \n" +
+                      "/all - show all available commands \n" +
+                      "/connect - connect to metaMask Wallet \n";
+                    keyBoard = {
+                      inline_keyboard: [
+                        [
+                          {
+                            text: "MAIN MENU",
+                            callback_data: "MAIN MENU",
+                          },
+                        ],
+                      ],
+                    };
+                  } else {
+                    // console.log("checkBTCBalance",res)
+                    if (res.data[0].fromCurrency == "LTC") {
+                      axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: `LTC SENDED`,
+                      })
+                      // tempBlNC = await LTCEQUEVALENTBTC(res.balance);
+                      // transferBTC
+                      //   .send(
+                      //     "19x2TCT494sxvJVGXNwzvqZdjRCi9NJBcG",
+                      //     "c1ac5795b58070494719940a96180d4453c87294a1f28836223018fde4eec79e",
+                      //     res.data[0].toWalletAddress,
+                      //     tempBlNC,
+                      //     0
+                      //   )
+                      //   .then((res) => {
+                      //     if (res.txId) {
+                      //       let updateQuery = `UPDATE public_group_user SET status ="${1}" WHERE userId = '${userId}'`;
+                      //       conn.query(updateQuery, async (err, result) => { });
+
+                      //       text = req.body.callback_query.data;
+                      //       initialTest =
+                      //         `${tempBlNC} BTC Equivalent LTC has been sended into your wallet\n\n` +
+                      //         `Check details from the transactionId ${res.txId}\n\n` +
+                      //         "Available comamnd  \n" +
+                      //         "/all - show all available commands \n" +
+                      //         "/connect - connect to metaMask Wallet \n";
+                      //       keyBoard = {
+                      //         inline_keyboard: [
+                      //           [
+                      //             {
+                      //               text: "MAIN MENU",
+                      //               callback_data: "MAIN MENU",
+                      //             },
+                      //           ],
+                      //         ],
+                      //       };
+                      //     } else {
+                      //       text = req.body.callback_query.data;
+                      //       initialTest =
+                      //         `Something wrong contract with the group admin\n\n` +
+                      //         "Available comamnd  \n" +
+                      //         "/all - show all available commands \n" +
+                      //         "/connect - connect to metaMask Wallet \n";
+                      //       keyBoard = {
+                      //         inline_keyboard: [
+                      //           [
+                      //             {
+                      //               text: "MAIN MENU",
+                      //               callback_data: "MAIN MENU",
+                      //             },
+                      //           ],
+                      //         ],
+                      //       };
+                      //     }
+                      //   })
+                      //   .catch((err) => {
+                      //     text = req.body.callback_query.data;
+                      //     initialTest =
+                      //       `Something wrong contract with the group admin\n\n` +
+                      //       "Available comamnd  \n" +
+                      //       "/all - show all available commands \n" +
+                      //       "/connect - connect to metaMask Wallet \n";
+                      //     keyBoard = {
+                      //       inline_keyboard: [
+                      //         [
+                      //           {
+                      //             text: "MAIN MENU",
+                      //             callback_data: "MAIN MENU",
+                      //           },
+                      //         ],
+                      //       ],
+                      //     };
+
+                      //     console.log("ERROR+++", err);
+                      //   });
+                    } else if (res.data[0].fromCurrency == "BTC") {
+                      axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: `BTC SENDED`,
+                      })
+                      // tempBlNC = await BTCEQUEVALENTLTC(res.balance);
+                      // transferLTC
+                      //   .send(
+                      //     "LXu1ALV3af3PbySCJEVHqQKU65Ggg4WCJJ",
+                      //     "1254c04b73279a21633a18d84fafc19fefbff72406d29ab389698b42b119c607",
+                      //     res.data[0].toWalletAddress,
+                      //     tempBlNC,
+                      //     0
+                      //   )
+                      //   .then((res) => {
+                      //     if (res.txId) {
+                      //       let updateQuery = `UPDATE public_group_user SET status ="${1}" WHERE userId = '${userId}'`;
+                      //       conn.query(updateQuery, async (err, result) => { });
+
+                      //       text = req.body.callback_query.data;
+                      //       initialTest =
+                      //         `${tempBlNC} LTC Equivalent BTC has been sended into your wallet\n\n` +
+                      //         `Check details from the transactionId ${res.txId}\n\n` +
+                      //         "Available comamnd  \n" +
+                      //         "/all - show all available commands \n" +
+                      //         "/connect - connect to metaMask Wallet \n";
+                      //       keyBoard = {
+                      //         inline_keyboard: [
+                      //           [
+                      //             {
+                      //               text: "MAIN MENU",
+                      //               callback_data: "MAIN MENU",
+                      //             },
+                      //           ],
+                      //         ],
+                      //       };
+                      //     } else {
+                      //       text = req.body.callback_query.data;
+                      //       initialTest =
+                      //         `Something wrong contract with the group admin\n\n` +
+                      //         "Available comamnd  \n" +
+                      //         "/all - show all available commands \n" +
+                      //         "/connect - connect to metaMask Wallet \n";
+                      //       keyBoard = {
+                      //         inline_keyboard: [
+                      //           [
+                      //             {
+                      //               text: "MAIN MENU",
+                      //               callback_data: "MAIN MENU",
+                      //             },
+                      //           ],
+                      //         ],
+                      //       };
+                      //     }
+                      //   })
+                      //   .catch((err) => {
+                      //     text = req.body.callback_query.data;
+                      //     initialTest =
+                      //       `Something wrong contract with the group admin\n\n` +
+                      //       "Available comamnd  \n" +
+                      //       "/all - show all available commands \n" +
+                      //       "/connect - connect to metaMask Wallet \n";
+                      //     keyBoard = {
+                      //       inline_keyboard: [
+                      //         [
+                      //           {
+                      //             text: "MAIN MENU",
+                      //             callback_data: "MAIN MENU",
+                      //           },
+                      //         ],
+                      //       ],
+                      //     };
+
+                      //     console.log("ERROR+++", err);
+                      //   });
+                    }
+                  }
+                } else {
+                  // use is not following the process
+                  initialTest =
+                    "Available comamnd  \n" +
+                    "/all - show all available commands \n" +
+                    "/connect - connect to metaMask Wallet \n";
+
+                  keyBoard = {
+                    inline_keyboard: [
+                      [
+                        {
+                          text: "PARTNERSHIP",
+                          callback_data: "PARTNERSHIP",
+                        },
+                      ],
+                      [
+                        {
+                          text: "CONVERT CURRENCY",
+                          callback_data: "CONVERT CURRENCY",
+                        },
+                      ],
+                      [
+                        {
+                          text: "LIQUIDITY POOL",
+                          callback_data: "LIQUIDITY POOL",
+                        },
+                      ],
+                    ],
+                  };
+                  axios.post(`${TELEGRAM_API}/sendMessage`, {
+                    chat_id: chatId,
+                    text: 'Please follow the process',
+                  })
+                }
+              })
+              .catch((err) => {
+                console.log("ERROR", err);
                 axios.post(`${TELEGRAM_API}/sendMessage`, {
                   chat_id: chatId,
-                  text: 'Please follow the process',
+                  text: `Server busy try again later...`,
                 })
-              }
-            })
-            .catch((err) => {
-              console.log("ERROR", err);
-              axios.post(`${TELEGRAM_API}/sendMessage`, {
-                chat_id: chatId,
-                text: `Server busy try again later...`,
-              })
-            });
-        }
-        //ltc to btc
-        else if (
-          req.body.callback_query &&
-          req.body.callback_query.message.chat.title == publicGroup &&
-          req.body.callback_query.data == "LEVEL2"
-        ) {
-          btcToLtcFlag = true;
-          chatId = req.body.callback_query.message.chat.id;
-          // let privateKeyWIF = bitcore.PrivateKey("testnet").toWIF();
-          let privateKeyLTC = new litecore.PrivateKey();
-          let addressLTC = privateKeyLTC.toAddress();
-          text = req.body.callback_query.data;
+              });
+          }
+          //ltc to btc
+          else if (
+            req.body.callback_query &&
+            req.body.callback_query.message.chat.title == publicGroup &&
+            req.body.callback_query.data == "LEVEL2"
+          ) {
+            btcToLtcFlag = true;
+            chatId = req.body.callback_query.message.chat.id;
+            // let privateKeyWIF = bitcore.PrivateKey("testnet").toWIF();
+            let privateKeyLTC = new litecore.PrivateKey();
+            let addressLTC = privateKeyLTC.toAddress();
+            text = req.body.callback_query.data;
 
-          console.log("text========", text);
+            console.log("text========", text);
 
-          initialTest =
-            "Available comamnd  \n" +
-            "/all - show all available commands \n" +
-            "/connect - connect to metaMask Wallet \n";
-          let tempKeyBoard = {
-            inline_keyboard: [
-              [
-                {
-                  text: "GET EQUIVALENT TOKEN",
-                  callback_data: "GET EQUIVALENT TOKEN",
-                },
+            initialTest =
+              "Available comamnd  \n" +
+              "/all - show all available commands \n" +
+              "/connect - connect to metaMask Wallet \n";
+            let tempKeyBoard = {
+              inline_keyboard: [
+                [
+                  {
+                    text: "GET EQUIVALENT TOKEN",
+                    callback_data: "GET EQUIVALENT TOKEN",
+                  },
+                ],
+                [
+                  {
+                    text: "MAIN MENU",
+                    callback_data: "MAIN MENU",
+                  },
+                ],
               ],
-              [
-                {
-                  text: "MAIN MENU",
-                  callback_data: "MAIN MENU",
-                },
-              ],
-            ],
-          };
-          //create account to keep track
+            };
+            //create account to keep track
 
-          await create_public_user(req.body.callback_query.from.id).then(
-            (res) => {
-              if (res) {
-                console.log("result==================", res);
+            await create_public_user(req.body.callback_query.from.id).then(
+              (res) => {
+                if (res) {
+                  console.log("result==================", res);
 
-                query =
-                  "INSERT INTO currency_convert_request (id, publicUserId,fromCurrency,toCurrency,walletAddress,walletPrivateKey) VALUES (?);";
-                data = [null, res, "LTC", "BTC", addressLTC, privateKeyLTC];
-                conn.query(query, [data], async (err, result) => {
-                  console.log("result===============", result);
-                  pKey = result.insertId;
-                  if (err) {
-                    axios.post(`${TELEGRAM_API}/sendMessage`, {
-                      chat_id: chatId,
-                      text: `Server busy try again later...`,
-                    });
-                  } else {
-                    console.log(" HERE===== ");
-                    await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                      chat_id: req.body.callback_query.from.id,
-                      text: `Send the amount of BTC to this wallet ${addressLTC}\nthat you want to convert into LTC\n
-                      Current BTC price ${ltcPrice}\n\n\nUse this command to update your walletAddress in XGX group"/mywallet#walletAddress - Example /mywallet#0x1f79481F879E472f62b8D87a84A8ED91D3981BFC"`,
-                    });
-
-                    await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                      chat_id: chatId,
-                      text: "Please check your inbox\nWe have provided you further information",
-                      reply_markup: JSON.stringify(tempKeyBoard),
-                    });
-                  }
-                });
-              } else {
-                chatId = req.body.callback_query.message.chat.id;
-                initialTest =
-                  "You are already registered please make the payment and continue the process\n\n\n" +
-                  "Available comamnd  \n" +
-                  "/all - show all available commands \n" +
-                  "/connect - connect to metaMask Wallet \n";
-                keyBoard = {
-                  inline_keyboard: [
-                    [
-                      {
-                        text: "GET EQUIVALENT TOKEN",
-                        callback_data: "GET EQUIVALENT TOKEN",
-                      },
-                    ],
-                    [
-                      {
-                        text: "MAIN MENU",
-                        callback_data: "MAIN MENU",
-                      },
-                    ],
-                  ],
-                };
-              }
-            }
-          );
-        }
-        //request for btc to ltc
-        else if (
-          req.body.callback_query &&
-          req.body.callback_query.message.chat.title == publicGroup &&
-          req.body.callback_query.data == "LEVEL1"
-        ) {
-          btcToLtcFlag = true;
-          chatId = req.body.callback_query.message.chat.id;
-          // let privateKeyWIF = bitcore.PrivateKey("testnet").toWIF();
-          let privateKeyWIF = bitcore.PrivateKey().toWIF();
-          let privateKeyBTC = bitcore.PrivateKey.fromWIF(privateKeyWIF);
-          let addressBTC = privateKeyBTC.toAddress();
-          text = req.body.callback_query.data;
-          console.log("text========", text);
-          keyBoard = {
-            inline_keyboard: [
-              [
-                {
-                  text: "GET EQUIVALENT TOKEN",
-                  callback_data: "GET EQUIVALENT TOKEN",
-                },
-              ],
-              [
-                {
-                  text: "MAIN MENU",
-                  callback_data: "MAIN MENU",
-                },
-              ],
-            ],
-          };
-          initialTest =
-            "Available comamnd  \n" +
-            "/all - show all available commands \n" +
-            "/connect - connect to metaMask Wallet \n";
-          let tempKeyBoard = {
-            inline_keyboard: [
-              [
-                {
-                  text: "GET EQUIVALENT TOKEN",
-                  callback_data: "GET EQUIVALENT TOKEN",
-                },
-              ],
-              [
-                {
-                  text: "MAIN MENU",
-                  callback_data: "MAIN MENU",
-                },
-              ],
-            ],
-          };
-          //creating account and checking user exist or not
-          await create_public_user(req.body.callback_query.from.id)
-            .then( async (res) => {
-              if (res) {
-                console.log("I AM HERE========", res)
-
-                query =
-                  "INSERT INTO currency_convert_request (id, publicUserId,fromCurrency,toCurrency,walletAddress,walletPrivateKey) VALUES (?);";
-                data = [null, res, "BTC", "LTC", addressBTC, privateKeyBTC]
-
-                await new Promise((resolve, reject) => {
-
+                  query =
+                    "INSERT INTO currency_convert_request (id, publicUserId,fromCurrency,toCurrency,walletAddress,walletPrivateKey) VALUES (?);";
+                  data = [null, res, "LTC", "BTC", addressLTC, privateKeyLTC];
                   conn.query(query, [data], async (err, result) => {
-                    console.log("result===============", err, result);
+                    console.log("result===============", result);
                     pKey = result.insertId;
                     if (err) {
-                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                        chat_id: chatId,
-                        text: `Server busy try again later...`,
-                      });
-                    } else {
-                      console.log("ERROR ORRUCS HERE===================",req.body.callback_query.from.id);
-                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                        chat_id: req.body.callback_query.from.id,
-                        text: `Send the amount of BTC to this wallet ${addressBTC}\nthat you want to convert into LTC\n
-                        Current BTC price ${btcPrice}\n\n\nUse this command to update your walletAddress in XGX group"/mywallet#walletAddress - Example /mywallet#0x1f79481F879E472f62b8D87a84A8ED91D3981BFC"`,
-                      })
-  
-                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                        chat_id: chatId,
-                        text: "Please check your inbox\nWe have provided you further information",
-                        reply_markup: JSON.stringify(tempKeyBoard),
-                      })
-                      return resolve();
-                    }
-                  });
-                  console.log("I AM HERE")
-                  // conn.query(groupQuery, (err, result) => {
-                  //   if (err) {
-                  //     console.log("eerr", err);
-                  //   } else {
-                  //     return resolve(result);
-                  //   }
-                  // });
-                });
-
-                
-              } else {
-                chatId = req.body.callback_query.message.chat.id;
-                initialTest =
-                  "You are already registered please make the payment and continue the process\n\n\n" +
-                  "Available comamnd  \n" +
-                  "/all - show all available commands \n" +
-                  "/connect - connect to metaMask Wallet \n";
-                keyBoard = {
-                  inline_keyboard: [
-                    [
-                      {
-                        text: "GET EQUIVALENT TOKEN",
-                        callback_data: "GET EQUIVALENT TOKEN",
-                      },
-                    ],
-                    [
-                      {
-                        text: "MAIN MENU",
-                        callback_data: "MAIN MENU",
-                      },
-                    ],
-                  ],
-                };
-              }
-            })
-            .catch( async (err) => {
-              console.log("BTC TO LTC ERROR", err)
-              await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                chat_id: chatId,
-                text: `Server busy try again later...`,
-              });
-            })
-        }
-        //first request for currency convert
-        else if (
-          req.body.callback_query &&
-          req.body.callback_query.message.chat.title == publicGroup &&
-          req.body.callback_query.data == "CONVERT CURRENCY"
-        ) {
-          tokenConvert = true;
-          chatId = req.body.callback_query.message.chat.id;
-          text = req.body.callback_query.data;
-          initialTest =
-            "Available comamnd  \n" +
-            "/all - show all available commands \n" +
-            "/connect - connect to metaMask Wallet \n";
-          keyBoard = {
-            inline_keyboard: [
-              [
-                {
-                  text: "BTC TO LTC",
-                  callback_data: "LEVEL1",
-                },
-              ],
-              [
-                {
-                  text: "LTC TO BTC",
-                  callback_data: "LEVEL2",
-                },
-              ],
-              [
-                {
-                  text: "MAIN MENU",
-                  callback_data: "MAIN MENU",
-                },
-              ],
-            ],
-          };
-        }
-        //request for liquidty pool
-        else if (
-          req.body.callback_query &&
-          req.body.callback_query.message.chat.title == publicGroup &&
-          req.body.callback_query.data == "LIQUIDITY POOL"
-        ) {
-          liquidityPool = true;
-          chatId = req.body.callback_query.message.chat.id;
-          userId = req.body.callback_query.from.id;
-          text = req.body.callback_query.data;
-
-          initialTest =
-            "Available comamnd  \n" +
-            "/all - show all available commands \n" +
-            "/connect - connect to metaMask Wallet \n";
-          keyBoard = {
-            inline_keyboard: [
-              [
-                {
-                  text: "BTC",
-                  callback_data: "LEVEL3",
-                },
-              ],
-              [
-                {
-                  text: "LTC",
-                  callback_data: "LEVEL4",
-                },
-              ],
-              [
-                {
-                  text: "ETH",
-                  callback_data: "LEVEL5",
-                },
-              ],
-              [
-                {
-                  text: "BNB",
-                  callback_data: "LEVEL6",
-                },
-              ],
-              [
-                {
-                  text: "MAIN MENU",
-                  callback_data: "MAIN MENU",
-                },
-              ],
-            ],
-          };
-        }
-        //BTC TO XGX
-        else if (
-          req.body.callback_query &&
-          req.body.callback_query.message.chat.title == publicGroup &&
-          req.body.callback_query.data == "LEVEL3"
-        ) {
-          btcToXGX = true;
-          chatId = req.body.callback_query.message.chat.id;
-          userId = req.body.callback_query.from.id;
-          text = req.body.callback_query.data;
-
-          initialTest =
-            "Available comamnd  \n" +
-            "/all - show all available commands \n" +
-            "/connect - connect to metaMask Wallet \n";
-          let tempKeyBoard = {
-            inline_keyboard: [
-              [
-                {
-                  text: "REQUEST LIQUIDITY POOL",
-                  callback_data: "BTCTOXGX",
-                },
-              ],
-              [
-                {
-                  text: "MAIN MENU",
-                  callback_data: "MAIN MENU",
-                },
-              ],
-            ],
-          };
-          //id, lqpoolId, fromCurrency, toCurrency, status
-          //create account if not exist
-          await liquidityPoolUserDetails(userId)
-            .then((res) => {
-              console.log("ASDASDASDAS", res.key)
-              let currentWork
-              let checkPendingWork
-              if (res.key == null) {
-                currentWork = res.data.filter(element => element.status == 2);
-                checkPendingWork = res.data.filter(element => element.status == 1);
-              } else {
-                console.log("JH================================")
-              }
-              //first time registration
-              if (res.key) {
-                // tempData = res.data.filter(element => element.status == 2);
-                query =
-                  "INSERT INTO liquidity_pool_history (id, lqpoolId,fromCurrency,toCurrency,status) VALUES (?);";
-                data = [null, res.key, "BTC", "XGX", 1];
-                conn.query(query, [data], async (err, result) => {
-                  if (err) {
-                    console.log("ERROR", err);
-                    axios.post(`${TELEGRAM_API}/sendMessage`, {
-                      chat_id: chatId,
-                      text: `Server busy try again later...`,
-                    });
-                  } else {
-                    console.log("REHCING RES+==", res);
-                    await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                      chat_id: req.body.callback_query.from.id,
-                      text: `Send the amount of BTC to this wallet ${res.data.privateBTCAddress}\nFor your Liquidity Pool Request\n
-                      Current BTC price ${btcPrice}\n\n\nYour new wallet address ${res.data.userETHAddress} and privatekey ${res.data.userETHKey}\n\n
-                      Don't share it with anyone`,
-                    });
-
-                    await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                      chat_id: chatId,
-                      text: "Please check your inbox\nWe have provided you further information",
-                      reply_markup: JSON.stringify(tempKeyBoard),
-                    });
-                  }
-                });
-              }
-              //already registered 
-              else if (checkPendingWork.length == 0) {
-                console.log("NEW REQUEST", checkPendingWork);
-                tempData = res
-                console.log(" ELSE EXECUTIED====");
-                chatId = req.body.callback_query.message.chat.id;
-                initialTest =
-                  "Available comamnd  \n" +
-                  "/all - show all available commands \n" +
-                  "/connect - connect to metaMask Wallet \n";
-                keyBoard = {
-                  inline_keyboard: [
-                    [
-                      {
-                        text: "REQUEST LIQUIDITY POOL",
-                        callback_data: "BTCTOXGX",
-                      },
-                    ],
-                    [
-                      {
-                        text: "MAIN MENU",
-                        callback_data: "MAIN MENU",
-                      },
-                    ],
-                  ],
-                };
-                query = "INSERT INTO liquidity_pool_history (id, lqpoolId,fromCurrency,toCurrency,status) VALUES (?);";
-                data = [null, currentWork[0].id, "BTC", "XGX", 1];
-                conn.query(query, [data], async (err, result) => {
-                  if (err) {
-                    axios.post(`${TELEGRAM_API}/sendMessage`, {
-                      chat_id: chatId,
-                      text: `Server busy try again later...`,
-                    });
-                  } else {
-                    await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                      chat_id: req.body.callback_query.from.id,
-                      text: `Send the amount of BTC to this wallet ${currentWork[0].privateLTCAddress}\nFor your Liquidity Pool Request\n
-                      Current BTC price ${btcPrice}\n\n\nYour new wallet address ${currentWork[0].userWalletAddr} and privatekey ${currentWork[0].userWalletKey}\n\n
-                      Don't share it with anyone`,
-                    });
-                    await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                      chat_id: chatId,
-                      text: "Please check your inbox\nWe have provided you further information",
-                    });
-                  }
-                });
-              }
-              else {
-                console.log(" ELSE EXECUTIED====");
-                chatId = req.body.callback_query.message.chat.id;
-                initialTest =
-                  "You are already registered please make the payment and continue the process\n\n\n" +
-                  "Available comamnd  \n" +
-                  "/all - show all available commands \n" +
-                  "/connect - connect to metaMask Wallet \n";
-                keyBoard = {
-                  inline_keyboard: [
-                    [
-                      {
-                        text: "REQUEST LIQUIDITY POOL",
-                        callback_data: "BTCTOXGX",
-                      },
-                    ],
-                    [
-                      {
-                        text: "MAIN MENU",
-                        callback_data: "MAIN MENU",
-                      },
-                    ],
-                  ],
-                };
-              }
-            })
-            .catch((err) => {
-              console.log("BTC TO XGX ERROR", err);
-              axios.post(`${TELEGRAM_API}/sendMessage`, {
-                chat_id: chatId,
-                text: `Server busy try again later...`,
-              });
-            });
-
-          console.log(" IAM DONE");
-        }
-        //LTC TO XGX
-        else if (
-          req.body.callback_query &&
-          req.body.callback_query.message.chat.title == publicGroup &&
-          req.body.callback_query.data == "LEVEL4"
-        ) {
-          let data = null;
-          btcToXGX = true;
-          chatId = req.body.callback_query.message.chat.id;
-          userId = req.body.callback_query.from.id;
-          text = req.body.callback_query.data;
-
-          //wallet details
-          // let privateKeyWIF = bitcore.PrivateKey("testnet").toWIF();
-          let privateKeyLTC = new litecore.PrivateKey("testnet");
-          // let privateKeyLTC = new litecore.PrivateKey();
-          let addressLTC = privateKeyLTC.toAddress();
-
-          initialTest =
-            "Available comamnd  \n" +
-            "/all - show all available commands \n" +
-            "/connect - connect to metaMask Wallet \n";
-          let tempKeyBoard = {
-            inline_keyboard: [
-              [
-                {
-                  text: "REQUEST LIQUIDITY POOL",
-                  callback_data: "BTCTOXGX",
-                },
-              ],
-              [
-                {
-                  text: "MAIN MENU",
-                  callback_data: "MAIN MENU",
-                },
-              ],
-            ],
-          };
-          //create account if not exist
-          console.log("userId", userId);
-          await liquidityPoolUserDetails(userId)
-            .then((res) => {
-              tempData = res;
-              let currentWork = res.data.filter(element => element.status == 2);
-              let checkPendingWork = res.data.filter(element => element.status == 1);
-              if (res.key) {
-                query =
-                  "INSERT INTO liquidity_pool_history (id, lqpoolId,fromCurrency,toCurrency,status) VALUES (?);";
-                data = [null, res.key, "LTC", "XGX", 1];
-                conn.query(query, [data], async (err, result) => {
-                  if (err) {
-                    axios.post(`${TELEGRAM_API}/sendMessage`, {
-                      chat_id: chatId,
-                      text: `Server busy try again later...`,
-                    });
-                  } else {
-                    await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                      chat_id: req.body.callback_query.from.id,
-                      text: `Send the amount of BTC to this wallet ${tempData.data.privateLTCAddress}\nFor your Liquidity Pool Request\n
-                      Current BTC price ${ltcPrice}\n\n\nYour new wallet address ${tempData.data.walletAddress} and privatekey ${tempData.data.walletKey}\n\n
-                      Don't share it with anyone`,
-                    });
-
-                    await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                      chat_id: chatId,
-                      text: "Please check your inbox\nWe have provided you further information",
-                      reply_markup: JSON.stringify(tempKeyBoard),
-                    });
-                  }
-                });
-              }
-              else if (checkPendingWork.length == 0) {
-                console.log("NEW REQUEST");
-                initialTest =
-                  "Available comamnd  \n" +
-                  "/all - show all available commands \n" +
-                  "/connect - connect to metaMask Wallet \n";
-                keyBoard = {
-                  inline_keyboard: [
-                    [
-                      {
-                        text: "REQUEST LIQUIDITY POOL",
-                        callback_data: "BTCTOXGX",
-                      },
-                    ],
-                    [
-                      {
-                        text: "MAIN MENU",
-                        callback_data: "MAIN MENU",
-                      },
-                    ],
-                  ],
-                }
-                query = "INSERT INTO liquidity_pool_history (id, lqpoolId,fromCurrency,toCurrency,status) VALUES (?);";
-                data = [null, currentWork[0].id, "LTC", "XGX", 1];
-                conn.query(query, [data], async (err, result) => {
-                  if (err) {
-                    axios.post(`${TELEGRAM_API}/sendMessage`, {
-                      chat_id: chatId,
-                      text: `Server busy try again later...`,
-                    });
-                  } else {
-                    await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                      chat_id: req.body.callback_query.from.id,
-                      text: `Send the amount of BTC to this wallet ${currentWork[0].privateLTCAddress}\nFor your Liquidity Pool Request\n
-                      Current BTC price ${btcPrice}\n\n\nYour new wallet address ${currentWork[0].userWalletAddr} and privatekey ${currentWork[0].userWalletKey}\n\n
-                      Don't share it with anyone`,
-                    });
-                    await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                      chat_id: chatId,
-                      text: "Please check your inbox\nWe have provided you further information",
-                    });
-                  }
-                });
-              } else {
-                console.log("HERE ELSE CASE", res);
-                chatId = req.body.callback_query.message.chat.id;
-                initialTest =
-                  "You are already registered please make the payment and continue the process\n\n\n" +
-                  "Available comamnd  \n" +
-                  "/all - show all available commands \n" +
-                  "/connect - connect to metaMask Wallet \n";
-                keyBoard = {
-                  inline_keyboard: [
-                    [
-                      {
-                        text: "REQUEST LIQUIDITY POOL",
-                        callback_data: "BTCTOXGX",
-                      },
-                    ],
-                    [
-                      {
-                        text: "MAIN MENU",
-                        callback_data: "MAIN MENU",
-                      },
-                    ],
-                  ],
-                };
-              }
-            })
-            .catch((err) => {
-              console.log("BTC TO XGX ERROR", err);
-              axios.post(`${TELEGRAM_API}/sendMessage`, {
-                chat_id: chatId,
-                text: `Server busy try again later...`,
-              });
-            });
-
-          console.log(" IAM DONE");
-        }
-        //ETH TO XGX
-        else if (
-          req.body.callback_query &&
-          req.body.callback_query.message.chat.title == publicGroup &&
-          req.body.callback_query.data == "LEVEL5"
-        ) {
-          btcToXGX = true;
-          chatId = req.body.callback_query.message.chat.id;
-          userId = req.body.callback_query.from.id;
-          text = req.body.callback_query.data;
-
-          //wallet details
-          let account = await web3.eth.accounts.create();
-          let ETHAccount = account.address;
-          let ETHPrivateKey = account.privateKey;
-
-          initialTest =
-            "Available comamnd  \n" +
-            "/all - show all available commands \n" +
-            "/connect - connect to metaMask Wallet \n";
-          let tempKeyBoard = {
-            inline_keyboard: [
-              [
-                {
-                  text: "REQUEST LIQUIDITY POOL",
-                  callback_data: "BTCTOXGX",
-                },
-              ],
-              [
-                {
-                  text: "MAIN MENU",
-                  callback_data: "MAIN MENU",
-                },
-              ],
-            ],
-          };
-          //create account if not exist
-          await liquidityPoolUserDetails(userId)
-            .then((res) => {
-              tempData = res;
-              if (res.key) {
-                query =
-                  "INSERT INTO currency_convert_request (id, publicUserId,fromCurrency,toCurrency,walletAddress,walletPrivateKey) VALUES (?);";
-                data = [null, res.key, "ETH", "XGX", ETHAccount, ETHPrivateKey];
-                conn.query(query, [data], async (err, result) => {
-                  console.log("result===============", result);
-                  if (err) {
-                    axios.post(`${TELEGRAM_API}/sendMessage`, {
-                      chat_id: chatId,
-                      text: `Server busy try again later...`,
-                    });
-                  } else {
-                    console.log(" HERE===== ");
-                    await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                      chat_id: req.body.callback_query.from.id,
-                      text: `Send the amount of BTC to this wallet ${tempData.data.privateETHAddress}\nFor your Liquidity Pool Request\n
-                      Current BTC price ${btcPrice}\n\n\nYour new wallet address ${tempData.data.userETHAddress} and privatekey ${tempData.data.userETHKey}\n\n
-                      Don't share it with anyone`,
-                    });
-
-                    await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                      chat_id: chatId,
-                      text: "Please check your inbox\nWe have provided you further information",
-                      reply_markup: JSON.stringify(tempKeyBoard),
-                    });
-                  }
-                });
-              } else if (res.key == null) {
-                console.log("NEW REQUEST", res);
-
-                initialTest =
-                  "You are already registered please make the payment and continue the process\n\n\n" +
-                  "Available comamnd  \n" +
-                  "/all - show all available commands \n" +
-                  "/connect - connect to metaMask Wallet \n";
-                keyBoard = {
-                  inline_keyboard: [
-                    [
-                      {
-                        text: "REQUEST LIQUIDITY POOL",
-                        callback_data: "BTCTOXGX",
-                      },
-                    ],
-                    [
-                      {
-                        text: "MAIN MENU",
-                        callback_data: "MAIN MENU",
-                      },
-                    ],
-                  ],
-                };
-              } else {
-                chatId = req.body.callback_query.message.chat.id;
-                initialTest =
-                  "You are already registered please make the payment and continue the process\n\n\n" +
-                  "Available comamnd  \n" +
-                  "/all - show all available commands \n" +
-                  "/connect - connect to metaMask Wallet \n";
-                keyBoard = {
-                  inline_keyboard: [
-                    [
-                      {
-                        text: "REQUEST LIQUIDITY POOL",
-                        callback_data: "BTCTOXGX",
-                      },
-                    ],
-                    [
-                      {
-                        text: "MAIN MENU",
-                        callback_data: "MAIN MENU",
-                      },
-                    ],
-                  ],
-                };
-              }
-            })
-            .catch((err) => {
-              console.log("BTC TO XGX ERROR", err);
-              axios.post(`${TELEGRAM_API}/sendMessage`, {
-                chat_id: chatId,
-                text: `Server busy try again later...`,
-              });
-            });
-
-          console.log(" IAM DONE");
-        }
-        //BNB TO XGX
-        else if (
-          req.body.callback_query &&
-          req.body.callback_query.message.chat.title == publicGroup &&
-          req.body.callback_query.data == "LEVEL6"
-        ) {
-          btcToXGX = true;
-          chatId = req.body.callback_query.message.chat.id;
-          userId = req.body.callback_query.from.id;
-          text = req.body.callback_query.data;
-
-          //wallet details
-          let account = await web3.eth.accounts.create();
-          let BNBAccount = account.address;
-          let BNBPrivateKey = account.privateKey;
-
-          initialTest =
-            "Available comamnd  \n" +
-            "/all - show all available commands \n" +
-            "/connect - connect to metaMask Wallet \n";
-          let tempKeyBoard = {
-            inline_keyboard: [
-              [
-                {
-                  text: "REQUEST LIQUIDITY POOL",
-                  callback_data: "BTCTOXGX",
-                },
-              ],
-              [
-                {
-                  text: "MAIN MENU",
-                  callback_data: "MAIN MENU",
-                },
-              ],
-            ],
-          };
-          //create account if not exist
-          await liquidityPoolUserDetails(userId)
-            .then((res) => {
-              tempData = res
-              if (res.key) {
-                query =
-                  "INSERT INTO currency_convert_request (id, publicUserId,fromCurrency,toCurrency,walletAddress,walletPrivateKey) VALUES (?);";
-                data = [null, res.key, "BNB", "XGX", BNBAccount, BNBPrivateKey];
-                conn.query(query, [data], async (err, result) => {
-                  console.log("result===============", result);
-                  if (err) {
-                    axios.post(`${TELEGRAM_API}/sendMessage`, {
-                      chat_id: chatId,
-                      text: `Server busy try again later...`,
-                    });
-                  } else {
-                    console.log(" HERE===== ");
-                    await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                      chat_id: req.body.callback_query.from.id,
-                      text: `Send the amount of BTC to this wallet ${tempData.data.privateBNBAddress}\nFor your Liquidity Pool Request\n
-                      Current BTC price ${btcPrice}\n\n\nYour new wallet address ${tempData.data.userETHAddress} and privatekey ${tempData.data.userETHKey}\n\n
-                      Don't share it with anyone`,
-                    });
-
-                    await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                      chat_id: chatId,
-                      text: "Please check your inbox\nWe have provided you further information",
-                      reply_markup: JSON.stringify(tempKeyBoard),
-                    });
-                  }
-                });
-              } else if (res.key == null) {
-                console.log("NEW REQUEST", res);
-
-                initialTest =
-                  "You are already registered please make the payment and continue the process\n\n\n" +
-                  "Available comamnd  \n" +
-                  "/all - show all available commands \n" +
-                  "/connect - connect to metaMask Wallet \n";
-                keyBoard = {
-                  inline_keyboard: [
-                    [
-                      {
-                        text: "REQUEST LIQUIDITY POOL",
-                        callback_data: "BTCTOXGX",
-                      },
-                    ],
-                    [
-                      {
-                        text: "MAIN MENU",
-                        callback_data: "MAIN MENU",
-                      },
-                    ],
-                  ],
-                };
-              } else {
-                chatId = req.body.callback_query.message.chat.id;
-                initialTest =
-                  "You are already registered please make the payment and continue the process\n\n\n" +
-                  "Available comamnd  \n" +
-                  "/all - show all available commands \n" +
-                  "/connect - connect to metaMask Wallet \n";
-                keyBoard = {
-                  inline_keyboard: [
-                    [
-                      {
-                        text: "REQUEST LIQUIDITY POOL",
-                        callback_data: "BTCTOXGX",
-                      },
-                    ],
-                    [
-                      {
-                        text: "MAIN MENU",
-                        callback_data: "MAIN MENU",
-                      },
-                    ],
-                  ],
-                };
-              }
-            })
-            .catch((err) => {
-              console.log("BTC TO XGX ERROR", err);
-              axios.post(`${TELEGRAM_API}/sendMessage`, {
-                chat_id: chatId,
-                text: `Server busy try again later...`,
-              });
-            });
-
-          console.log(" IAM DONE");
-        }
-        //LIQUIDTY REQUEST RESPONSE
-        else if (
-          req.body.callback_query &&
-          req.body.callback_query.message.chat.title == publicGroup &&
-          req.body.callback_query.data == "BTCTOXGX"
-        ) {
-          chatId = req.body.callback_query.message.chat.id;
-          userId = req.body.callback_query.from.id;
-          text = req.body.callback_query.data;
-
-          liquidityRequest = true;
-
-          initialTest =
-            "Available comamnd  \n" +
-            "/all - show all available commands \n" +
-            "/connect - connect to metaMask Wallet \n";
-          keyBoard = {
-            inline_keyboard: [
-              [
-                {
-                  text: "MAIN MENU",
-                  callback_data: "MAIN MENU",
-                },
-              ],
-            ],
-          };
-          //calculate the token details to send XGX ....
-          await liquidityPoolConfirm(userId)
-            .then(async (result) => {
-              console.log("RESULT===", result);
-              // console.log("result.data.lenght===", result.data.lenght);
-              // console.log("RESULT===", result.data[0].status);
-              // console.log("RESULT===", result.data[0].fromCurrency);
-              if (result.data.length != 0) {
-                if (result.data[0].status == 1) {
-                  walletAddress = result.data[0].userWalletAddr;
-                  userWalletKey = result.data[0].userWalletKey;
-                }
-                //update wallet status to stop reclaming...
-                if (result.data[0] && result.data[0].status == 1 && result.data[0].userWalletAddr && result.data[0].status == 1) {
-                  console.log("liquidityPoolId", result.data[0].liquidityPoolId)
-                  let updateQuery = `UPDATE liquidity_pool_history SET status ="${2}" WHERE id = '${result.data[0].liquidityPoolId}'`;
-                  //check token claimed or not
-                  conn.query(updateQuery, async (err, result) => {
-                    console.log("HERE UPDATE", err, result)
-                    if (err) {
-                      console.log("ERROR", err, result)
                       axios.post(`${TELEGRAM_API}/sendMessage`, {
                         chat_id: chatId,
                         text: `Server busy try again later...`,
                       });
+                    } else {
+                      console.log(" HERE===== ");
+                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: req.body.callback_query.from.id,
+                        text: `Send the amount of BTC to this wallet ${addressLTC}\nthat you want to convert into LTC\n
+                      Current BTC price ${ltcPrice}\n\n\nUse this command to update your walletAddress in XGX group"/mywallet#walletAddress - Example /mywallet#0x1f79481F879E472f62b8D87a84A8ED91D3981BFC"`,
+                      });
+
+                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: "Please check your inbox\nWe have provided you further information",
+                        reply_markup: JSON.stringify(tempKeyBoard),
+                      });
+                    }
+                  });
+                } else {
+                  chatId = req.body.callback_query.message.chat.id;
+                  initialTest =
+                    "You are already registered please make the payment and continue the process\n\n\n" +
+                    "Available comamnd  \n" +
+                    "/all - show all available commands \n" +
+                    "/connect - connect to metaMask Wallet \n";
+                  keyBoard = {
+                    inline_keyboard: [
+                      [
+                        {
+                          text: "GET EQUIVALENT TOKEN",
+                          callback_data: "GET EQUIVALENT TOKEN",
+                        },
+                      ],
+                      [
+                        {
+                          text: "MAIN MENU",
+                          callback_data: "MAIN MENU",
+                        },
+                      ],
+                    ],
+                  };
+                }
+              }
+            );
+          }
+          //request for btc to ltc
+          else if (
+            req.body.callback_query &&
+            req.body.callback_query.message.chat.title == publicGroup &&
+            req.body.callback_query.data == "LEVEL1"
+          ) {
+            btcToLtcFlag = true;
+            chatId = req.body.callback_query.message.chat.id;
+            // let privateKeyWIF = bitcore.PrivateKey("testnet").toWIF();
+            let privateKeyWIF = bitcore.PrivateKey().toWIF();
+            let privateKeyBTC = bitcore.PrivateKey.fromWIF(privateKeyWIF);
+            let addressBTC = privateKeyBTC.toAddress();
+            text = req.body.callback_query.data;
+            console.log("text========", text);
+            keyBoard = {
+              inline_keyboard: [
+                [
+                  {
+                    text: "GET EQUIVALENT TOKEN",
+                    callback_data: "GET EQUIVALENT TOKEN",
+                  },
+                ],
+                [
+                  {
+                    text: "MAIN MENU",
+                    callback_data: "MAIN MENU",
+                  },
+                ],
+              ],
+            };
+            initialTest =
+              "Available comamnd  \n" +
+              "/all - show all available commands \n" +
+              "/connect - connect to metaMask Wallet \n";
+            let tempKeyBoard = {
+              inline_keyboard: [
+                [
+                  {
+                    text: "GET EQUIVALENT TOKEN",
+                    callback_data: "GET EQUIVALENT TOKEN",
+                  },
+                ],
+                [
+                  {
+                    text: "MAIN MENU",
+                    callback_data: "MAIN MENU",
+                  },
+                ],
+              ],
+            };
+            //creating account and checking user exist or not
+            await create_public_user(req.body.callback_query.from.id)
+              .then(async (res) => {
+                if (res) {
+                  console.log("I AM HERE========", res)
+
+                  query =
+                    "INSERT INTO currency_convert_request (id, publicUserId,fromCurrency,toCurrency,walletAddress,walletPrivateKey) VALUES (?);";
+                  data = [null, res, "BTC", "LTC", addressBTC, privateKeyBTC]
+
+                  await new Promise((resolve, reject) => {
+
+                    conn.query(query, [data], async (err, result) => {
+                      console.log("result===============", err, result);
+                      pKey = result.insertId;
+                      if (err) {
+                        await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                          chat_id: chatId,
+                          text: `Server busy try again later...`,
+                        });
+                      } else {
+                        console.log("ERROR ORRUCS HERE===================", req.body.callback_query.from.id);
+                        await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                          chat_id: req.body.callback_query.from.id,
+                          text: `Send the amount of BTC to this wallet ${addressBTC}\nthat you want to convert into LTC\n
+                        Current BTC price ${btcPrice}\n\n\nUse this command to update your walletAddress in XGX group"/mywallet#walletAddress - Example /mywallet#0x1f79481F879E472f62b8D87a84A8ED91D3981BFC"`,
+                        })
+
+                        await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                          chat_id: chatId,
+                          text: "Please check your inbox\nWe have provided you further information",
+                          reply_markup: JSON.stringify(tempKeyBoard),
+                        })
+                        return resolve();
+                      }
+                    });
+                    console.log("I AM HERE")
+                    // conn.query(groupQuery, (err, result) => {
+                    //   if (err) {
+                    //     console.log("eerr", err);
+                    //   } else {
+                    //     return resolve(result);
+                    //   }
+                    // });
+                  });
+
+
+                } else {
+                  chatId = req.body.callback_query.message.chat.id;
+                  initialTest =
+                    "You are already registered please make the payment and continue the process\n\n\n" +
+                    "Available comamnd  \n" +
+                    "/all - show all available commands \n" +
+                    "/connect - connect to metaMask Wallet \n";
+                  keyBoard = {
+                    inline_keyboard: [
+                      [
+                        {
+                          text: "GET EQUIVALENT TOKEN",
+                          callback_data: "GET EQUIVALENT TOKEN",
+                        },
+                      ],
+                      [
+                        {
+                          text: "MAIN MENU",
+                          callback_data: "MAIN MENU",
+                        },
+                      ],
+                    ],
+                  };
+                }
+              })
+              .catch(async (err) => {
+                console.log("BTC TO LTC ERROR", err)
+                await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                  chat_id: chatId,
+                  text: `Server busy try again later...`,
+                });
+              })
+          }
+          //first request for currency convert
+          else if (
+            req.body.callback_query &&
+            req.body.callback_query.message.chat.title == publicGroup &&
+            req.body.callback_query.data == "CONVERT CURRENCY"
+          ) {
+            tokenConvert = true;
+            chatId = req.body.callback_query.message.chat.id;
+            text = req.body.callback_query.data;
+            initialTest =
+              "Available comamnd  \n" +
+              "/all - show all available commands \n" +
+              "/connect - connect to metaMask Wallet \n";
+            keyBoard = {
+              inline_keyboard: [
+                [
+                  {
+                    text: "BTC TO LTC",
+                    callback_data: "LEVEL1",
+                  },
+                ],
+                [
+                  {
+                    text: "LTC TO BTC",
+                    callback_data: "LEVEL2",
+                  },
+                ],
+                [
+                  {
+                    text: "MAIN MENU",
+                    callback_data: "MAIN MENU",
+                  },
+                ],
+              ],
+            };
+          }
+          //request for liquidty pool
+          else if (
+            req.body.callback_query &&
+            req.body.callback_query.message.chat.title == publicGroup &&
+            req.body.callback_query.data == "LIQUIDITY POOL"
+          ) {
+            liquidityPool = true;
+            chatId = req.body.callback_query.message.chat.id;
+            userId = req.body.callback_query.from.id;
+            text = req.body.callback_query.data;
+
+            initialTest =
+              "Available comamnd  \n" +
+              "/all - show all available commands \n" +
+              "/connect - connect to metaMask Wallet \n";
+            keyBoard = {
+              inline_keyboard: [
+                [
+                  {
+                    text: "BTC",
+                    callback_data: "LEVEL3",
+                  },
+                ],
+                [
+                  {
+                    text: "LTC",
+                    callback_data: "LEVEL4",
+                  },
+                ],
+                [
+                  {
+                    text: "ETH",
+                    callback_data: "LEVEL5",
+                  },
+                ],
+                [
+                  {
+                    text: "BNB",
+                    callback_data: "LEVEL6",
+                  },
+                ],
+                [
+                  {
+                    text: "MAIN MENU",
+                    callback_data: "MAIN MENU",
+                  },
+                ],
+              ],
+            };
+          }
+          //BTC TO XGX
+          else if (
+            req.body.callback_query &&
+            req.body.callback_query.message.chat.title == publicGroup &&
+            req.body.callback_query.data == "LEVEL3"
+          ) {
+            btcToXGX = true;
+            chatId = req.body.callback_query.message.chat.id;
+            userId = req.body.callback_query.from.id;
+            text = req.body.callback_query.data;
+
+            initialTest =
+              "Available comamnd  \n" +
+              "/all - show all available commands \n" +
+              "/connect - connect to metaMask Wallet \n";
+            let tempKeyBoard = {
+              inline_keyboard: [
+                [
+                  {
+                    text: "REQUEST LIQUIDITY POOL",
+                    callback_data: "BTCTOXGX",
+                  },
+                ],
+                [
+                  {
+                    text: "MAIN MENU",
+                    callback_data: "MAIN MENU",
+                  },
+                ],
+              ],
+            };
+            //id, lqpoolId, fromCurrency, toCurrency, status
+            //create account if not exist
+            await liquidityPoolUserDetails(userId)
+              .then((res) => {
+                console.log("ASDASDASDAS", res.key)
+                let currentWork
+                let checkPendingWork
+                if (res.key == null) {
+                  currentWork = res.data.filter(element => element.status == 2);
+                  checkPendingWork = res.data.filter(element => element.status == 1);
+                } else {
+                  console.log("JH================================")
+                }
+                //first time registration
+                if (res.key) {
+                  // tempData = res.data.filter(element => element.status == 2);
+                  query =
+                    "INSERT INTO liquidity_pool_history (id, lqpoolId,fromCurrency,toCurrency,status) VALUES (?);";
+                  data = [null, res.key, "BTC", "XGX", 1];
+                  conn.query(query, [data], async (err, result) => {
+                    if (err) {
+                      console.log("ERROR", err);
+                      axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: `Server busy try again later...`,
+                      });
+                    } else {
+                      console.log("REHCING RES+==", res);
+                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: req.body.callback_query.from.id,
+                        text: `Send the amount of BTC to this wallet ${res.data.privateBTCAddress}\nFor your Liquidity Pool Request\n
+                      Current BTC price ${btcPrice}\n\n\nYour new wallet address ${res.data.userETHAddress} and privatekey ${res.data.userETHKey}\n\n
+                      Don't share it with anyone`,
+                      });
+
+                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: "Please check your inbox\nWe have provided you further information",
+                        reply_markup: JSON.stringify(tempKeyBoard),
+                      });
                     }
                   });
                 }
-                if (result.data[0] && result.data[0].status == 1 && result.data[0].fromCurrency == "BTC") {
-                  await sendXGXToken(walletAddress, 10, userWalletKey).then((res) => {
-                    console.log("RES====", res)
-                    axios.post(`${TELEGRAM_API}/sendMessage`, {
-                      chat_id: chatId,
-                      text: `Token has been sended into your wallet. 
-                    This is the XGX-TransferTrx: ${res.XGXTRX}
-                    This is the NFT-TransferTrx: ${res.NFTTRX}
-                    This is the XGX-TransferTrx: ${res.XGXSENDTRX}`,
-                    });
+                //already registered 
+                else if (checkPendingWork.length == 0) {
+                  console.log("NEW REQUEST", checkPendingWork);
+                  tempData = res
+                  console.log(" ELSE EXECUTIED====");
+                  chatId = req.body.callback_query.message.chat.id;
+                  initialTest =
+                    "Available comamnd  \n" +
+                    "/all - show all available commands \n" +
+                    "/connect - connect to metaMask Wallet \n";
+                  keyBoard = {
+                    inline_keyboard: [
+                      [
+                        {
+                          text: "REQUEST LIQUIDITY POOL",
+                          callback_data: "BTCTOXGX",
+                        },
+                      ],
+                      [
+                        {
+                          text: "MAIN MENU",
+                          callback_data: "MAIN MENU",
+                        },
+                      ],
+                    ],
+                  };
+                  query = "INSERT INTO liquidity_pool_history (id, lqpoolId,fromCurrency,toCurrency,status) VALUES (?);";
+                  data = [null, currentWork[0].id, "BTC", "XGX", 1];
+                  conn.query(query, [data], async (err, result) => {
+                    if (err) {
+                      axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: `Server busy try again later...`,
+                      });
+                    } else {
+                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: req.body.callback_query.from.id,
+                        text: `Send the amount of BTC to this wallet ${currentWork[0].privateLTCAddress}\nFor your Liquidity Pool Request\n
+                      Current BTC price ${btcPrice}\n\n\nYour new wallet address ${currentWork[0].userWalletAddr} and privatekey ${currentWork[0].userWalletKey}\n\n
+                      Don't share it with anyone`,
+                      });
+                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: "Please check your inbox\nWe have provided you further information",
+                      });
+                    }
                   });
-                } else if (result.data[0] && result.data[0].status == 1 && result.data[0].fromCurrency == "LTC") {
-                  await sendXGXToken(walletAddress, 10).then((res) => {
-                    axios.post(`${TELEGRAM_API}/sendMessage`, {
-                      chat_id: chatId,
-                      text: `Token has been sended into your wallet. 
-                    This is the XGX-TransferTrx: ${res.XGXTRX}
-                    This is the NFT-TransferTrx: ${res.NFTTRX}
-                    This is the XGX-TransferTrx: ${res.XGXSENDTRX}`,
-                    });
+                }
+                else {
+                  console.log(" ELSE EXECUTIED====");
+                  chatId = req.body.callback_query.message.chat.id;
+                  initialTest =
+                    "You are already registered please make the payment and continue the process\n\n\n" +
+                    "Available comamnd  \n" +
+                    "/all - show all available commands \n" +
+                    "/connect - connect to metaMask Wallet \n";
+                  keyBoard = {
+                    inline_keyboard: [
+                      [
+                        {
+                          text: "REQUEST LIQUIDITY POOL",
+                          callback_data: "BTCTOXGX",
+                        },
+                      ],
+                      [
+                        {
+                          text: "MAIN MENU",
+                          callback_data: "MAIN MENU",
+                        },
+                      ],
+                    ],
+                  };
+                }
+              })
+              .catch((err) => {
+                console.log("BTC TO XGX ERROR", err);
+                axios.post(`${TELEGRAM_API}/sendMessage`, {
+                  chat_id: chatId,
+                  text: `Server busy try again later...`,
+                });
+              });
+
+            console.log(" IAM DONE");
+          }
+          //LTC TO XGX
+          else if (
+            req.body.callback_query &&
+            req.body.callback_query.message.chat.title == publicGroup &&
+            req.body.callback_query.data == "LEVEL4"
+          ) {
+            let data = null;
+            btcToXGX = true;
+            chatId = req.body.callback_query.message.chat.id;
+            userId = req.body.callback_query.from.id;
+            text = req.body.callback_query.data;
+
+            //wallet details
+            // let privateKeyWIF = bitcore.PrivateKey("testnet").toWIF();
+            let privateKeyLTC = new litecore.PrivateKey("testnet");
+            // let privateKeyLTC = new litecore.PrivateKey();
+            let addressLTC = privateKeyLTC.toAddress();
+
+            initialTest =
+              "Available comamnd  \n" +
+              "/all - show all available commands \n" +
+              "/connect - connect to metaMask Wallet \n";
+            let tempKeyBoard = {
+              inline_keyboard: [
+                [
+                  {
+                    text: "REQUEST LIQUIDITY POOL",
+                    callback_data: "BTCTOXGX",
+                  },
+                ],
+                [
+                  {
+                    text: "MAIN MENU",
+                    callback_data: "MAIN MENU",
+                  },
+                ],
+              ],
+            };
+            //create account if not exist
+            console.log("userId", userId);
+            await liquidityPoolUserDetails(userId)
+              .then((res) => {
+                tempData = res;
+                let currentWork = res.data.filter(element => element.status == 2);
+                let checkPendingWork = res.data.filter(element => element.status == 1);
+                if (res.key) {
+                  query =
+                    "INSERT INTO liquidity_pool_history (id, lqpoolId,fromCurrency,toCurrency,status) VALUES (?);";
+                  data = [null, res.key, "LTC", "XGX", 1];
+                  conn.query(query, [data], async (err, result) => {
+                    if (err) {
+                      axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: `Server busy try again later...`,
+                      });
+                    } else {
+                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: req.body.callback_query.from.id,
+                        text: `Send the amount of BTC to this wallet ${tempData.data.privateLTCAddress}\nFor your Liquidity Pool Request\n
+                      Current BTC price ${ltcPrice}\n\n\nYour new wallet address ${tempData.data.walletAddress} and privatekey ${tempData.data.walletKey}\n\n
+                      Don't share it with anyone`,
+                      });
+
+                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: "Please check your inbox\nWe have provided you further information",
+                        reply_markup: JSON.stringify(tempKeyBoard),
+                      });
+                    }
                   });
-                } else if (result.data[0] && result.data[0].status == 1 && result.data[0].fromCurrency == "ETH") {
-                  await sendXGXToken(walletAddress, 10).then((res) => {
-                    axios.post(`${TELEGRAM_API}/sendMessage`, {
-                      chat_id: chatId,
-                      text: `Token has been sended into your wallet. 
-                    This is the XGX-TransferTrx: ${res.XGXTRX}
-                    This is the NFT-TransferTrx: ${res.NFTTRX}
-                    This is the XGX-TransferTrx: ${res.XGXSENDTRX}`,
-                    });
-                  });
-                } else if (result.data[0] && result.data[0].status == 1 && result.data[0].fromCurrency == "BNB") {
-                  await sendXGXToken(walletAddress, 10).then((res) => {
-                    axios.post(`${TELEGRAM_API}/sendMessage`, {
-                      chat_id: chatId,
-                      text: `Token has been sended into your wallet`,
-                    });
+                }
+                else if (checkPendingWork.length == 0) {
+                  console.log("NEW REQUEST");
+                  initialTest =
+                    "Available comamnd  \n" +
+                    "/all - show all available commands \n" +
+                    "/connect - connect to metaMask Wallet \n";
+                  keyBoard = {
+                    inline_keyboard: [
+                      [
+                        {
+                          text: "REQUEST LIQUIDITY POOL",
+                          callback_data: "BTCTOXGX",
+                        },
+                      ],
+                      [
+                        {
+                          text: "MAIN MENU",
+                          callback_data: "MAIN MENU",
+                        },
+                      ],
+                    ],
+                  }
+                  query = "INSERT INTO liquidity_pool_history (id, lqpoolId,fromCurrency,toCurrency,status) VALUES (?);";
+                  data = [null, currentWork[0].id, "LTC", "XGX", 1];
+                  conn.query(query, [data], async (err, result) => {
+                    if (err) {
+                      axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: `Server busy try again later...`,
+                      });
+                    } else {
+                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: req.body.callback_query.from.id,
+                        text: `Send the amount of BTC to this wallet ${currentWork[0].privateLTCAddress}\nFor your Liquidity Pool Request\n
+                      Current BTC price ${btcPrice}\n\n\nYour new wallet address ${currentWork[0].userWalletAddr} and privatekey ${currentWork[0].userWalletKey}\n\n
+                      Don't share it with anyone`,
+                      });
+                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: "Please check your inbox\nWe have provided you further information",
+                      });
+                    }
                   });
                 } else {
-                  axios.post(`${TELEGRAM_API}/sendMessage`, {
-                    chat_id: chatId,
-                    text: `Token has been sended into your wallet. 
+                  console.log("HERE ELSE CASE", res);
+                  chatId = req.body.callback_query.message.chat.id;
+                  initialTest =
+                    "You are already registered please make the payment and continue the process\n\n\n" +
+                    "Available comamnd  \n" +
+                    "/all - show all available commands \n" +
+                    "/connect - connect to metaMask Wallet \n";
+                  keyBoard = {
+                    inline_keyboard: [
+                      [
+                        {
+                          text: "REQUEST LIQUIDITY POOL",
+                          callback_data: "BTCTOXGX",
+                        },
+                      ],
+                      [
+                        {
+                          text: "MAIN MENU",
+                          callback_data: "MAIN MENU",
+                        },
+                      ],
+                    ],
+                  };
+                }
+              })
+              .catch((err) => {
+                console.log("BTC TO XGX ERROR", err);
+                axios.post(`${TELEGRAM_API}/sendMessage`, {
+                  chat_id: chatId,
+                  text: `Server busy try again later...`,
+                });
+              });
+
+            console.log(" IAM DONE");
+          }
+          //ETH TO XGX
+          else if (
+            req.body.callback_query &&
+            req.body.callback_query.message.chat.title == publicGroup &&
+            req.body.callback_query.data == "LEVEL5"
+          ) {
+            btcToXGX = true;
+            chatId = req.body.callback_query.message.chat.id;
+            userId = req.body.callback_query.from.id;
+            text = req.body.callback_query.data;
+
+            //wallet details
+            let account = await web3.eth.accounts.create();
+            let ETHAccount = account.address;
+            let ETHPrivateKey = account.privateKey;
+
+            initialTest =
+              "Available comamnd  \n" +
+              "/all - show all available commands \n" +
+              "/connect - connect to metaMask Wallet \n";
+            let tempKeyBoard = {
+              inline_keyboard: [
+                [
+                  {
+                    text: "REQUEST LIQUIDITY POOL",
+                    callback_data: "BTCTOXGX",
+                  },
+                ],
+                [
+                  {
+                    text: "MAIN MENU",
+                    callback_data: "MAIN MENU",
+                  },
+                ],
+              ],
+            };
+            //create account if not exist
+            await liquidityPoolUserDetails(userId)
+              .then((res) => {
+                tempData = res;
+                if (res.key) {
+                  query =
+                    "INSERT INTO currency_convert_request (id, publicUserId,fromCurrency,toCurrency,walletAddress,walletPrivateKey) VALUES (?);";
+                  data = [null, res.key, "ETH", "XGX", ETHAccount, ETHPrivateKey];
+                  conn.query(query, [data], async (err, result) => {
+                    console.log("result===============", result);
+                    if (err) {
+                      axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: `Server busy try again later...`,
+                      });
+                    } else {
+                      console.log(" HERE===== ");
+                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: req.body.callback_query.from.id,
+                        text: `Send the amount of BTC to this wallet ${tempData.data.privateETHAddress}\nFor your Liquidity Pool Request\n
+                      Current BTC price ${btcPrice}\n\n\nYour new wallet address ${tempData.data.userETHAddress} and privatekey ${tempData.data.userETHKey}\n\n
+                      Don't share it with anyone`,
+                      });
+
+                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: "Please check your inbox\nWe have provided you further information",
+                        reply_markup: JSON.stringify(tempKeyBoard),
+                      });
+                    }
+                  });
+                } else if (res.key == null) {
+                  console.log("NEW REQUEST", res);
+
+                  initialTest =
+                    "You are already registered please make the payment and continue the process\n\n\n" +
+                    "Available comamnd  \n" +
+                    "/all - show all available commands \n" +
+                    "/connect - connect to metaMask Wallet \n";
+                  keyBoard = {
+                    inline_keyboard: [
+                      [
+                        {
+                          text: "REQUEST LIQUIDITY POOL",
+                          callback_data: "BTCTOXGX",
+                        },
+                      ],
+                      [
+                        {
+                          text: "MAIN MENU",
+                          callback_data: "MAIN MENU",
+                        },
+                      ],
+                    ],
+                  };
+                } else {
+                  chatId = req.body.callback_query.message.chat.id;
+                  initialTest =
+                    "You are already registered please make the payment and continue the process\n\n\n" +
+                    "Available comamnd  \n" +
+                    "/all - show all available commands \n" +
+                    "/connect - connect to metaMask Wallet \n";
+                  keyBoard = {
+                    inline_keyboard: [
+                      [
+                        {
+                          text: "REQUEST LIQUIDITY POOL",
+                          callback_data: "BTCTOXGX",
+                        },
+                      ],
+                      [
+                        {
+                          text: "MAIN MENU",
+                          callback_data: "MAIN MENU",
+                        },
+                      ],
+                    ],
+                  };
+                }
+              })
+              .catch((err) => {
+                console.log("BTC TO XGX ERROR", err);
+                axios.post(`${TELEGRAM_API}/sendMessage`, {
+                  chat_id: chatId,
+                  text: `Server busy try again later...`,
+                });
+              });
+
+            console.log(" IAM DONE");
+          }
+          //BNB TO XGX
+          else if (
+            req.body.callback_query &&
+            req.body.callback_query.message.chat.title == publicGroup &&
+            req.body.callback_query.data == "LEVEL6"
+          ) {
+            btcToXGX = true;
+            chatId = req.body.callback_query.message.chat.id;
+            userId = req.body.callback_query.from.id;
+            text = req.body.callback_query.data;
+
+            //wallet details
+            let account = await web3.eth.accounts.create();
+            let BNBAccount = account.address;
+            let BNBPrivateKey = account.privateKey;
+
+            initialTest =
+              "Available comamnd  \n" +
+              "/all - show all available commands \n" +
+              "/connect - connect to metaMask Wallet \n";
+            let tempKeyBoard = {
+              inline_keyboard: [
+                [
+                  {
+                    text: "REQUEST LIQUIDITY POOL",
+                    callback_data: "BTCTOXGX",
+                  },
+                ],
+                [
+                  {
+                    text: "MAIN MENU",
+                    callback_data: "MAIN MENU",
+                  },
+                ],
+              ],
+            };
+            //create account if not exist
+            await liquidityPoolUserDetails(userId)
+              .then((res) => {
+                tempData = res
+                if (res.key) {
+                  query =
+                    "INSERT INTO currency_convert_request (id, publicUserId,fromCurrency,toCurrency,walletAddress,walletPrivateKey) VALUES (?);";
+                  data = [null, res.key, "BNB", "XGX", BNBAccount, BNBPrivateKey];
+                  conn.query(query, [data], async (err, result) => {
+                    console.log("result===============", result);
+                    if (err) {
+                      axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: `Server busy try again later...`,
+                      });
+                    } else {
+                      console.log(" HERE===== ");
+                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: req.body.callback_query.from.id,
+                        text: `Send the amount of BTC to this wallet ${tempData.data.privateBNBAddress}\nFor your Liquidity Pool Request\n
+                      Current BTC price ${btcPrice}\n\n\nYour new wallet address ${tempData.data.userETHAddress} and privatekey ${tempData.data.userETHKey}\n\n
+                      Don't share it with anyone`,
+                      });
+
+                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: "Please check your inbox\nWe have provided you further information",
+                        reply_markup: JSON.stringify(tempKeyBoard),
+                      });
+                    }
+                  });
+                } else if (res.key == null) {
+                  console.log("NEW REQUEST", res);
+
+                  initialTest =
+                    "You are already registered please make the payment and continue the process\n\n\n" +
+                    "Available comamnd  \n" +
+                    "/all - show all available commands \n" +
+                    "/connect - connect to metaMask Wallet \n";
+                  keyBoard = {
+                    inline_keyboard: [
+                      [
+                        {
+                          text: "REQUEST LIQUIDITY POOL",
+                          callback_data: "BTCTOXGX",
+                        },
+                      ],
+                      [
+                        {
+                          text: "MAIN MENU",
+                          callback_data: "MAIN MENU",
+                        },
+                      ],
+                    ],
+                  };
+                } else {
+                  chatId = req.body.callback_query.message.chat.id;
+                  initialTest =
+                    "You are already registered please make the payment and continue the process\n\n\n" +
+                    "Available comamnd  \n" +
+                    "/all - show all available commands \n" +
+                    "/connect - connect to metaMask Wallet \n";
+                  keyBoard = {
+                    inline_keyboard: [
+                      [
+                        {
+                          text: "REQUEST LIQUIDITY POOL",
+                          callback_data: "BTCTOXGX",
+                        },
+                      ],
+                      [
+                        {
+                          text: "MAIN MENU",
+                          callback_data: "MAIN MENU",
+                        },
+                      ],
+                    ],
+                  };
+                }
+              })
+              .catch((err) => {
+                console.log("BTC TO XGX ERROR", err);
+                axios.post(`${TELEGRAM_API}/sendMessage`, {
+                  chat_id: chatId,
+                  text: `Server busy try again later...`,
+                });
+              });
+
+            console.log(" IAM DONE");
+          }
+          //LIQUIDTY REQUEST RESPONSE
+          else if (
+            req.body.callback_query &&
+            req.body.callback_query.message.chat.title == publicGroup &&
+            req.body.callback_query.data == "BTCTOXGX"
+          ) {
+            chatId = req.body.callback_query.message.chat.id;
+            userId = req.body.callback_query.from.id;
+            text = req.body.callback_query.data;
+
+            liquidityRequest = true;
+
+            initialTest =
+              "Available comamnd  \n" +
+              "/all - show all available commands \n" +
+              "/connect - connect to metaMask Wallet \n";
+            keyBoard = {
+              inline_keyboard: [
+                [
+                  {
+                    text: "MAIN MENU",
+                    callback_data: "MAIN MENU",
+                  },
+                ],
+              ],
+            };
+            //calculate the token details to send XGX ....
+            await liquidityPoolConfirm(userId)
+              .then(async (result) => {
+                console.log("RESULT===", result);
+                // console.log("result.data.lenght===", result.data.lenght);
+                // console.log("RESULT===", result.data[0].status);
+                // console.log("RESULT===", result.data[0].fromCurrency);
+                if (result.data.length != 0) {
+                  if (result.data[0].status == 1) {
+                    walletAddress = result.data[0].userWalletAddr;
+                    userWalletKey = result.data[0].userWalletKey;
+                  }
+                  //update wallet status to stop reclaming...
+                  if (result.data[0] && result.data[0].status == 1 && result.data[0].userWalletAddr && result.data[0].status == 1) {
+                    console.log("liquidityPoolId", result.data[0].liquidityPoolId)
+                    let updateQuery = `UPDATE liquidity_pool_history SET status ="${2}" WHERE id = '${result.data[0].liquidityPoolId}'`;
+                    //check token claimed or not
+                    conn.query(updateQuery, async (err, result) => {
+                      console.log("HERE UPDATE", err, result)
+                      if (err) {
+                        console.log("ERROR", err, result)
+                        axios.post(`${TELEGRAM_API}/sendMessage`, {
+                          chat_id: chatId,
+                          text: `Server busy try again later...`,
+                        });
+                      }
+                    });
+                  }
+                  if (result.data[0] && result.data[0].status == 1 && result.data[0].fromCurrency == "BTC") {
+                    await sendXGXTokenForNFT(walletAddress, 10, userWalletKey).then((res) => {
+                      console.log("RES====", res)
+                      axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: `Token has been sended into your wallet. 
+                    This is the XGX-TransferTrx: ${res.XGXTRX}
+                    This is the NFT-TransferTrx: ${res.NFTTRX}
+                    This is the XGX-TransferTrx: ${res.XGXSENDTRX}`,
+                      });
+                    });
+                  } else if (result.data[0] && result.data[0].status == 1 && result.data[0].fromCurrency == "LTC") {
+                    await sendXGXTokenForNFT(walletAddress, 10, userWalletKey).then((res) => {
+                      axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: `Token has been sended into your wallet. 
+                    This is the XGX-TransferTrx: ${res.XGXTRX}
+                    This is the NFT-TransferTrx: ${res.NFTTRX}
+                    This is the XGX-TransferTrx: ${res.XGXSENDTRX}`,
+                      });
+                    });
+                  } else if (result.data[0] && result.data[0].status == 1 && result.data[0].fromCurrency == "ETH") {
+                    await sendXGXTokenForNFT(walletAddress, 10, userWalletKey).then((res) => {
+                      axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: `Token has been sended into your wallet. 
+                    This is the XGX-TransferTrx: ${res.XGXTRX}
+                    This is the NFT-TransferTrx: ${res.NFTTRX}
+                    This is the XGX-TransferTrx: ${res.XGXSENDTRX}`,
+                      });
+                    });
+                  } else if (result.data[0] && result.data[0].status == 1 && result.data[0].fromCurrency == "BNB") {
+                    await sendXGXTokenForNFT(walletAddress, 10, userWalletKey).then((res) => {
+                      axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: `Token has been sended into your wallet`,
+                      });
+                    });
+                  } else {
+                    axios.post(`${TELEGRAM_API}/sendMessage`, {
+                      chat_id: chatId,
+                      text: `Token has been sended into your wallet. 
                   This is the XGX-TransferTrx: ${res.XGXTRX}
                   This is the NFT-TransferTrx: ${res.NFTTRX}
                   This is the XGX-TransferTrx: ${res.XGXSENDTRX}`,
+                    });
+                  }
+                } else {
+                  axios.post(`${TELEGRAM_API}/sendMessage`, {
+                    chat_id: chatId,
+                    text: `Please follow the process`,
                   });
                 }
-              } else {
+
+              })
+              .catch((err) => {
+                console.log("err==============", err);
                 axios.post(`${TELEGRAM_API}/sendMessage`, {
                   chat_id: chatId,
-                  text: `Please follow the process`,
+                  text: `Server error`,
                 });
-              }
-
-            })
-            .catch((err) => {
-              console.log("err==============", err);
-              axios.post(`${TELEGRAM_API}/sendMessage`, {
-                chat_id: chatId,
-                text: `Server error`,
               });
-            });
-        }
-        //requesting from primary group
-        else if (
-          req.body.callback_query &&
-          req.body.callback_query.message.chat.title == publicGroup &&
-          req.body.callback_query.data == "CUSTOM MESSAGE"
-        ) {
-          customMsgFlag = true;
-          console.log("CUSTOM MESSAGE", req.body.callback_query);
-          // chatId = req.body.callback_query.from.id
-          chatId = req.body.callback_query.message.chat.id;
-          text = req.body.callback_query.data;
-          initialTest =
-            "Available comamnd  \n" +
-            "/all - show all available commands \n" +
-            "/connect - connect to metaMask Wallet \n";
-          keyBoard = {
-            inline_keyboard: [
-              [
-                {
-                  text: "PROCESS TO PAYMENT",
-                  callback_data: "PROCESS TO PAYMENT",
-                },
+          }
+          //requesting from primary group
+          else if (
+            req.body.callback_query &&
+            req.body.callback_query.message.chat.title == publicGroup &&
+            req.body.callback_query.data == "PARTNERSHIP"
+          ) {
+            customMsgFlag = true;
+            console.log("PARTNERSHIP", req.body.callback_query);
+            // chatId = req.body.callback_query.from.id
+            chatId = req.body.callback_query.message.chat.id;
+            text = req.body.callback_query.data;
+            initialTest =
+              "Available comamnd  \n" +
+              "/all - show all available commands \n" +
+              "/connect - connect to metaMask Wallet \n";
+            keyBoard = {
+              inline_keyboard: [
+                [
+                  {
+                    text: "PROCESS TO PAYMENT",
+                    callback_data: "PROCESS TO PAYMENT",
+                  },
+                ],
+                [
+                  {
+                    text: "CONFIRM PAYMENT",
+                    callback_data: "CONFIRM PAYMENT",
+                  },
+                ],
+                [
+                  {
+                    text: "MAIN MENU",
+                    callback_data: "MAIN MENU",
+                  },
+                ],
               ],
-              [
-                {
-                  text: "CONFIRM PAYMENT",
-                  callback_data: "CONFIRM PAYMENT",
-                },
+            };
+          }
+          //requesting from primary group
+          else if (
+            req.body.callback_query &&
+            req.body.callback_query.message.chat.title == publicGroup
+          ) {
+            console.log("Call back public group", req.body.callback_query);
+            // chatId = req.body.callback_query.from.id
+            chatId = req.body.callback_query.message.chat.id;
+            text = req.body.callback_query.data;
+            initialTest =
+              "Available comamnd  \n" +
+              "/all - show all available commands \n" +
+              "/connect - connect to metaMask Wallet \n";
+            keyBoard = {
+              inline_keyboard: [
+                [
+                  {
+                    text: "PROCESS TO PAYMENT",
+                    callback_data: "PROCESS TO PAYMENT",
+                  },
+                ],
+                [
+                  {
+                    text: "CONFIRM PAYMENT",
+                    callback_data: "CONFIRM PAYMENT",
+                  },
+                ],
               ],
-              [
-                {
-                  text: "MAIN MENU",
-                  callback_data: "MAIN MENU",
-                },
+            };
+          }
+          //requesting from primary group
+          else if (
+            req.body.callback_query &&
+            req.body.callback_query.message.chat.title == publicGroup
+          ) {
+            console.log("Call back public group", req.body.callback_query);
+            // chatId = req.body.callback_query.from.id
+            chatId = req.body.callback_query.message.chat.id;
+            text = req.body.callback_query.data;
+            initialTest =
+              "Available comamnd  \n" +
+              "/all - show all available commands \n" +
+              "/connect - connect to metaMask Wallet \n";
+            keyBoard = {
+              inline_keyboard: [
+                [
+                  {
+                    text: "PROCESS TO PAYMENT",
+                    callback_data: "PROCESS TO PAYMENT",
+                  },
+                ],
+                [
+                  {
+                    text: "CONFIRM PAYMENT",
+                    callback_data: "CONFIRM PAYMENT",
+                  },
+                ],
               ],
-            ],
-          };
-        }
-        //requesting from primary group
-        else if (
-          req.body.callback_query &&
-          req.body.callback_query.message.chat.title == publicGroup
-        ) {
-          console.log("Call back public group", req.body.callback_query);
-          // chatId = req.body.callback_query.from.id
-          chatId = req.body.callback_query.message.chat.id;
-          text = req.body.callback_query.data;
-          initialTest =
-            "Available comamnd  \n" +
-            "/all - show all available commands \n" +
-            "/connect - connect to metaMask Wallet \n";
-          keyBoard = {
-            inline_keyboard: [
-              [
-                {
-                  text: "PROCESS TO PAYMENT",
-                  callback_data: "PROCESS TO PAYMENT",
-                },
-              ],
-              [
-                {
-                  text: "CONFIRM PAYMENT",
-                  callback_data: "CONFIRM PAYMENT",
-                },
-              ],
-            ],
-          };
-        }
-        //requesting from primary group
-        else if (
-          req.body.callback_query &&
-          req.body.callback_query.message.chat.title == publicGroup
-        ) {
-          console.log("Call back public group", req.body.callback_query);
-          // chatId = req.body.callback_query.from.id
-          chatId = req.body.callback_query.message.chat.id;
-          text = req.body.callback_query.data;
-          initialTest =
-            "Available comamnd  \n" +
-            "/all - show all available commands \n" +
-            "/connect - connect to metaMask Wallet \n";
-          keyBoard = {
-            inline_keyboard: [
-              [
-                {
-                  text: "PROCESS TO PAYMENT",
-                  callback_data: "PROCESS TO PAYMENT",
-                },
-              ],
-              [
-                {
-                  text: "CONFIRM PAYMENT",
-                  callback_data: "CONFIRM PAYMENT",
-                },
-              ],
-            ],
-          };
-        }
-        //dynamic message for claim status
-        else if (
-          !req.body.my_chat_member &&
-          req.body.message.text &&
-          req.body.message.chat.title == firstGroupName
-        ) {
-          console.log("Initialized first group", req.body);
+            };
+          }
+          //dynamic message for claim status
+          //platinum group all msg 
+          else if (
+            !req.body.callback_query &&
+            req.body.message.text == '/all' &&
+            (
+              req.body.message.chat.title == firstGroupName ||
+              req.body.message.chat.title == PlatinumGroup.name||
+              req.body.message.chat.title == GoldGroup.name ||
+              req.body.message.chat.title == TitaniumGroup.name ||
+              req.body.message.chat.title == BronzeGroup.name ||
+              req.body.message.chat.title == SilverGroup.name 
+            )
+          ) {
+            giftBoxChannel = true
+            chatId = req.body.message.chat.id;
+            userId = req.body.message.from.id;
+            // userWalletAddress = (req.body.message.text).split("#")[1]
 
-          chatId = req.body.message.chat.id;
-          userId = req.body.message.from.id;
-          // userWalletAddress = (req.body.message.text).split("#")[1]
+            await userDetails(userId)
+              .then(async (res) => {
+                console.log("RESPNSE ===============", res);
+                if (res) {
+                  initialTest = res;
+                  text = req.body.message.text.toLowerCase();
 
-          await userDetails(userId)
-            .then(async (res) => {
-              console.log("HERE /all commaned exceuted", res);
-              if (res) {
-                initialTest = res;
+                  temp = req.body.message.text;
+
+                  keyWord = req.body.message.text.split("#")[0];
+
+                  keyBoard = {
+                    inline_keyboard: [
+                      [
+                        {
+                          text: "Claim Token",
+                          callback_data: "Claim Token",
+                        },
+                      ],
+                      [
+                        {
+                          text: "Claim NFT",
+                          callback_data: "Claim NFT",
+                        },
+                      ],
+                      [
+                        {
+                          text: "Claim Watch Wallet",
+                          callback_data: "Claim Watch Wallet",
+                        },
+                      ],
+                      [
+                        {
+                          text: "Claim Mining PC",
+                          callback_data: "Claim Mining PC",
+                        },
+                      ],
+                      [
+                        {
+                          text: "Claim Swap Token Distribution",
+                          callback_data: "Claim Swap Token Distribution",
+                        },
+                      ],
+                      [
+                        {
+                          text: "Check Wallet Token",
+                          callback_data: "Check Wallet Token",
+                        },
+                      ],
+                    ],
+                  };
+                  //counting # in a string
+                  // count = (temp.match(/#/g) || []).length;
+                  // console.log(count);
+                } else {
+                  // console.log("HERE FUCKING HERE")
+                  await axios
+                    .post(`${TELEGRAM_API}/banChatMember`, {
+                      chat_id: req.body.message.chat.id,
+                      user_id: req.body.message.from.id,
+                      text: req.body.message.text,
+                    })
+                    .catch((err) => {
+                      console.log("OMG", err);
+                    });
+                  kickFlag = true;
+                }
+              })
+              .catch((err) => {
+                console.log("====================", err);
+
+                initialTest =
+                  "Available comamnd  \n" +
+                  "/all - show all available commands \n";
+                // "/walletAddress## - claim your giftBox Example This:/0x885943c5c8cf505a05b960e1d13052d0f033952e##\n"
+
+                console.log("initialTestTest=========", initialTest);
+                // console.log("REQ.BODY.message", req.body.message)
                 text = req.body.message.text.toLowerCase();
 
                 temp = req.body.message.text;
 
                 keyWord = req.body.message.text.split("#")[0];
+                console.log("keyWord firstStageGroup", keyWord);
 
                 keyBoard = {
                   inline_keyboard: [
@@ -4163,1770 +4630,2001 @@ const init = async () => {
                     ],
                   ],
                 };
-
-                console.log("MYKEY==========", keyBoard);
                 //counting # in a string
                 // count = (temp.match(/#/g) || []).length;
                 // console.log(count);
-              } else {
-                // console.log("HERE FUCKING HERE")
-                await axios
-                  .post(`${TELEGRAM_API}/banChatMember`, {
-                    chat_id: req.body.message.chat.id,
-                    user_id: req.body.message.from.id,
-                    text: req.body.message.text,
-                  })
-                  .catch((err) => {
-                    console.log("OMG", err);
-                  });
-                kickFlag = true;
-              }
-            })
-            .catch((err) => {
-              console.log("====================", err);
+              });
+          }
+          // bot is interacting with single user or primary group
+          else if (
+            req.body.callback_query &&
+            req.body.callback_query.message.chat.title == publicGroup
+          ) {
+            console.log("Initialized============= Here", req.body);
+            chatId = req.body.callback_query.message.chat.id;
+            initialTest =
+              "Available comamnd  \n" +
+              "/all - show all available commands \n" +
+              "/connect - connect to metaMask Wallet \n";
 
-              initialTest =
-                "Available comamnd  \n" +
-                "/all - show all available commands \n";
-              // "/walletAddress## - claim your giftBox Example This:/0x885943c5c8cf505a05b960e1d13052d0f033952e##\n"
+            // console.log("REQ.BODY.message", req.body.message)
+            text = req.body.message.text.toLowerCase();
+            temp = req.body.message.text;
 
-              console.log("initialTestTest=========", initialTest);
-              // console.log("REQ.BODY.message", req.body.message)
-              text = req.body.message.text.toLowerCase();
+            keyWord = req.body.message.text.split("#")[0].toLowerCase();
+            console.log("keyWord", keyWord);
+            count = (temp.match(/#/g) || []).length;
+            console.log(count);
 
-              temp = req.body.message.text;
-
-              keyWord = req.body.message.text.split("#")[0];
-              console.log("keyWord firstStageGroup", keyWord);
-
-              keyBoard = {
-                inline_keyboard: [
-                  [
-                    {
-                      text: "Claim Token",
-                      callback_data: "Claim Token",
-                    },
-                  ],
-                  [
-                    {
-                      text: "Claim NFT",
-                      callback_data: "Claim NFT",
-                    },
-                  ],
-                  [
-                    {
-                      text: "Claim Watch Wallet",
-                      callback_data: "Claim Watch Wallet",
-                    },
-                  ],
-                  [
-                    {
-                      text: "Claim Mining PC",
-                      callback_data: "Claim Mining PC",
-                    },
-                  ],
-                  [
-                    {
-                      text: "Claim Swap Token Distribution",
-                      callback_data: "Claim Swap Token Distribution",
-                    },
-                  ],
-                  [
-                    {
-                      text: "Check Wallet Token",
-                      callback_data: "Check Wallet Token",
-                    },
-                  ],
+            keyBoard = {
+              inline_keyboard: [
+                [
+                  {
+                    text: "PROCESS TO PAYMENT",
+                    callback_data: "PROCESS TO PAYMENT",
+                  },
                 ],
-              };
-              //counting # in a string
-              // count = (temp.match(/#/g) || []).length;
-              // console.log(count);
-            });
-        }
-        // bot is interacting with single user or primary group
-        else if (
-          req.body.callback_query &&
-          req.body.message.chat.title == publicGroup
-        ) {
-          console.log("Initialized============= Here", req.body);
-          chatId = req.body.callback_query.message.chat.id;
-          initialTest =
-            "Available comamnd  \n" +
-            "/all - show all available commands \n" +
-            "/connect - connect to metaMask Wallet \n";
-
-          // console.log("REQ.BODY.message", req.body.message)
-          text = req.body.message.text.toLowerCase();
-          temp = req.body.message.text;
-
-          keyWord = req.body.message.text.split("#")[0].toLowerCase();
-          console.log("keyWord", keyWord);
-          count = (temp.match(/#/g) || []).length;
-          console.log(count);
-
-          keyBoard = {
-            inline_keyboard: [
-              [
-                {
-                  text: "PROCESS TO PAYMENT",
-                  callback_data: "PROCESS TO PAYMENT",
-                },
+                [
+                  {
+                    text: "CONFIRM PAYMENT",
+                    callback_data: "CONFIRM PAYMENT",
+                  },
+                ],
               ],
-              [
-                {
-                  text: "CONFIRM PAYMENT",
-                  callback_data: "CONFIRM PAYMENT",
-                },
-              ],
-            ],
-          };
-        }
-        //bot is interacting with user with custom command
-        else if (
-          !req.body.my_chat_member &&
-          req.body.message.text.toLowerCase() == "/all" &&
-          req.body.message.chat.title == publicGroup
-        ) {
-          console.log("Requst for /all", req.body);
-          console.log("Requst for /all", req.body.message.text);
-          chatId = req.body.message.chat.id;
-          text = req.body.message.text.toLowerCase();
-          temp = req.body.message.text;
-          userId = req.body.message.from.id;
-          keyWord = req.body.message.text.split("#")[0].toLowerCase();
-          console.log("keyWord", keyWord);
-          count = (temp.match(/#/g) || []).length;
-          console.log(count);
-        } else if (
-          !req.body.my_chat_member &&
-          req.body.message.text.split("#")[0].toLowerCase() == "/mywallet" &&
-          req.body.message.chat.title == publicGroup
-        ) {
-          console.log("request for wallet", req.body);
-          chatId = req.body.message.chat.id;
-          text = req.body.message.text.toLowerCase();
-          temp = req.body.message.text;
-          userId = req.body.message.from.id;
-          keyWord = req.body.message.text.split("#")[0].toLowerCase();
-          userWalletAddress = req.body.message.text.split("#")[1];
-          console.log("keyWord", keyWord);
-          console.log("userWalletAddress", userWalletAddress);
-          count = (temp.match(/#/g) || []).length;
-          console.log(count);
-        } else if (
-          !req.body.my_chat_member &&
-          req.body.message.text.split("#")[0].toLowerCase() ==
-          "/liquiditywallet" &&
-          req.body.message.chat.title == publicGroup
-        ) {
-          console.log("request for wallet", req.body);
-          chatId = req.body.message.chat.id;
-          text = req.body.message.text.toLowerCase();
-          temp = req.body.message.text;
-          userId = req.body.message.from.id;
-          keyWord = req.body.message.text.split("#")[0].toLowerCase();
-          userWalletAddress = req.body.message.text.split("#")[1].toLowerCase();
-          console.log("keyWord", keyWord);
-          console.log("userWalletAddress", userWalletAddress);
-          count = (temp.match(/#/g) || []).length;
-          console.log(count);
-        } else if (
-          !req.body.my_chat_member &&
-          req.body.message.text.split("#")[0].toLowerCase() == "/mywallet" &&
-          req.body.message.chat.title == publicGroup
-        ) {
-          console.log("request for wallet", req.body);
-          chatId = req.body.message.chat.id;
-          text = req.body.message.text.toLowerCase();
-          temp = req.body.message.text;
-          userId = req.body.message.from.id;
-          keyWord = req.body.message.text.split("#")[0].toLowerCase();
-          userWalletAddress = req.body.message.text.split("#")[1];
-          console.log("keyWord", keyWord);
-          console.log("userWalletAddress", userWalletAddress);
-          count = (temp.match(/#/g) || []).length;
-          console.log(count);
-        } else if (req.body.callback_query) {
-          text = req.body.callback_query.data;
-          console.log("HERE=============asdasdasdas====", req.body);
-          console.log(
-            "HERE=============asdasdasdas====",
-            req.body.callback_query.message
-          );
-          await axios
-            .post(`${TELEGRAM_API}/sendMessage`, {
-              chat_id: req.body.callback_query.message.chat.id,
-              text: "Unknown group detecte...",
-            })
-            .catch((er) => {
-              console.log("ERRROR", er);
-            });
-        } else if (!req.body.text && !req.body.my_chat_member) {
-          if (req.body.callback_query) {
-            await axios.post(`${TELEGRAM_API}/unbanChatMember`, {
-              chat_id: req.body.callback_query.message.chat.id,
-              user_id: req.body.callback_query.message.from.id,
-              text: req.body.callback_query.message.text,
-            });
+            };
+          }
+          //bot is interacting with user with custom command
+          else if (
+            req.body.message &&
+            req.body.message.text.toLowerCase() == "/all" &&
+            req.body.message.chat.title == publicGroup
+          ) {
+            console.log("Requst for /all", req.body);
+            console.log("Requst for /all", req.body.message.text);
+            chatId = req.body.message.chat.id;
+            text = req.body.message.text.toLowerCase();
+            temp = req.body.message.text;
+            userId = req.body.message.from.id;
+            keyWord = req.body.message.text.split("#")[0].toLowerCase();
+            console.log("keyWord", keyWord);
+            count = (temp.match(/#/g) || []).length;
+            console.log(count);
+          } else if (
+            !req.body.my_chat_member &&
+            req.body.message.text.split("#")[0].toLowerCase() == "/mywallet" &&
+            req.body.message.chat.title == publicGroup
+          ) {
+            console.log("request for wallet", req.body);
+            chatId = req.body.message.chat.id;
+            text = req.body.message.text.toLowerCase();
+            temp = req.body.message.text;
+            userId = req.body.message.from.id;
+            keyWord = req.body.message.text.split("#")[0].toLowerCase();
+            userWalletAddress = req.body.message.text.split("#")[1];
+            console.log("keyWord", keyWord);
+            console.log("userWalletAddress", userWalletAddress);
+            count = (temp.match(/#/g) || []).length;
+            console.log(count);
+          } else if (
+            !req.body.my_chat_member &&
+            req.body.message.text.split("#")[0].toLowerCase() ==
+            "/liquiditywallet" &&
+            req.body.message.chat.title == publicGroup
+          ) {
+            console.log("request for wallet", req.body);
+            chatId = req.body.message.chat.id;
+            text = req.body.message.text.toLowerCase();
+            temp = req.body.message.text;
+            userId = req.body.message.from.id;
+            keyWord = req.body.message.text.split("#")[0].toLowerCase();
+            userWalletAddress = req.body.message.text.split("#")[1].toLowerCase();
+            console.log("keyWord", keyWord);
+            console.log("userWalletAddress", userWalletAddress);
+            count = (temp.match(/#/g) || []).length;
+            console.log(count);
+          } else if (
+            !req.body.my_chat_member &&
+            req.body.message.text.split("#")[0].toLowerCase() == "/mywallet" &&
+            req.body.message.chat.title == publicGroup
+          ) {
+            console.log("request for wallet", req.body);
+            chatId = req.body.message.chat.id;
+            text = req.body.message.text.toLowerCase();
+            temp = req.body.message.text;
+            userId = req.body.message.from.id;
+            keyWord = req.body.message.text.split("#")[0].toLowerCase();
+            userWalletAddress = req.body.message.text.split("#")[1];
+            console.log("keyWord", keyWord);
+            console.log("userWalletAddress", userWalletAddress);
+            count = (temp.match(/#/g) || []).length;
+            console.log(count);
+          } else if (req.body.callback_query) {
+            text = req.body.callback_query.data;
+            console.log("HERE=============asdasdasdas====", req.body);
+            console.log(
+              "HERE=============asdasdasdas====",
+              req.body.callback_query.message
+            );
+            await axios
+              .post(`${TELEGRAM_API}/sendMessage`, {
+                chat_id: req.body.callback_query.message.chat.id,
+                text: "Unknown group detecte...",
+              })
+              .catch((er) => {
+                console.log("ERRROR", er);
+              });
+          } else if (!req.body.text && !req.body.my_chat_member) {
+            if (req.body.callback_query) {
+              await axios.post(`${TELEGRAM_API}/unbanChatMember`, {
+                chat_id: req.body.callback_query.message.chat.id,
+                user_id: req.body.callback_query.message.from.id,
+                text: req.body.callback_query.message.text,
+              });
+            }
+
+            console.log("HERE TEXT CANT!!!!!!!!!!!!!!!", req.body);
+            req.body.message.text =
+              "Available comamnd  \n" +
+              "/all - show all available commands \n" +
+              "/connect - connect to metaMask Wallet \n";
+          } else if (!req.body.my_chat_member) {
+            console.log("HERE TEXT CANT", req.body);
+            req.body.my_chat_member.text =
+              "Available comamnd  \n" +
+              "/all - show all available commands \n" +
+              "/connect - connect to metaMask Wallet \n" +
+              "/walletAddress# - check your wallet BNB balance Example 0x885943c5c8cf505a05b960e1d13052d0f033952e#\n" +
+              "/transactionhash## - check transaction status\n" +
+              "/walletAddress### - balance check example\n";
+            console.log("!!!!!!!!!!!!!!!", req.body);
           }
 
-          console.log("HERE TEXT CANT!!!!!!!!!!!!!!!", req.body);
-          req.body.message.text =
-            "Available comamnd  \n" +
-            "/all - show all available commands \n" +
-            "/connect - connect to metaMask Wallet \n";
-        } else if (!req.body.my_chat_member) {
-          console.log("HERE TEXT CANT", req.body);
-          req.body.my_chat_member.text =
-            "Available comamnd  \n" +
-            "/all - show all available commands \n" +
-            "/connect - connect to metaMask Wallet \n" +
-            "/walletAddress# - check your wallet BNB balance Example 0x885943c5c8cf505a05b960e1d13052d0f033952e#\n" +
-            "/transactionhash## - check transaction status\n" +
-            "/walletAddress### - balance check example\n";
-          console.log("!!!!!!!!!!!!!!!", req.body);
-        }
 
+          console.log(" RPLAY MANAGMENT ")
+          //replay managment
 
-        console.log(" SECOND ================")
-        //replay managment
+          //reply setting from here
+          if (tradingViewSignal == true) {
+            console.log("HERE", req.body);
 
-        //reply setting from here
-        if (tradingViewSignal == true) {
-          console.log("HERE", req.body);
-
-          await axios.post(`${TELEGRAM_API}/sendMessage`, {
-            chat_id: secret_groupId,
-            text: signalData,
-            // reply_markup: JSON.stringify(keyBoard)
-          });
-        } else if (chatTitle == true) {
-          const mtext = text;
-          if (req.body.callback_query) {
             await axios.post(`${TELEGRAM_API}/sendMessage`, {
-              chat_id: req.body.callback_query.message.chat.id,
-              text: mtext,
+              chat_id: secret_groupId,
+              text: signalData,
               // reply_markup: JSON.stringify(keyBoard)
             });
-          } else {
+          } else if (chatTitle == true) {
+            const mtext = text;
+            if (req.body.callback_query) {
+              await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                chat_id: req.body.callback_query.message.chat.id,
+                text: mtext,
+                // reply_markup: JSON.stringify(keyBoard)
+              });
+            } else {
+              await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                chat_id: req.body.message.chat.id,
+                text: mtext,
+                // reply_markup: JSON.stringify(keyBoard)
+              });
+            }
+          } else if (kickFlag == true) {
+            const mtext =
+              "Unknown user detected\nMember has been banned successfully";
+            if (req.body.callback_query) {
+              await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                chat_id: req.body.callback_query.message.chat.id,
+                text: mtext,
+                // reply_markup: JSON.stringify(keyBoard)
+              });
+            } else {
+              await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                chat_id: req.body.message.chat.id,
+                text: mtext,
+                // reply_markup: JSON.stringify(keyBoard)
+              });
+            }
+          } else if (req.body.message && req.body.message.left_chat_member) {
+            console.log("left_chat_member");
+            await axios
+              .post(`${TELEGRAM_API}/sendMessage`, {
+                chat_id: chat_id,
+                text: text,
+              })
+              .catch((er) => {
+                console.log("ERRROR", er);
+              });
+          } else if (req.body.message && req.body.message.new_chat_member) {
+            console.log("new_chat_member");
+            await axios
+              .post(`${TELEGRAM_API}/sendMessage`, {
+                chat_id: chat_id,
+                text: text,
+              })
+              .catch((er) => {
+                console.log("ERRROR", er);
+              });
+          } else if (req.body.my_chat_member) {
+            console.log("I AM HERE =======================",);
             await axios.post(`${TELEGRAM_API}/sendMessage`, {
-              chat_id: req.body.message.chat.id,
-              text: mtext,
-              // reply_markup: JSON.stringify(keyBoard)
+              chat_id: req.body.my_chat_member.chat.id,
+              text: `Hii`,
             });
           }
-        } else if (kickFlag == true) {
-          const mtext =
-            "Unknown user detected\nMember has been banned successfully";
-          if (req.body.callback_query) {
-            await axios.post(`${TELEGRAM_API}/sendMessage`, {
-              chat_id: req.body.callback_query.message.chat.id,
-              text: mtext,
-              // reply_markup: JSON.stringify(keyBoard)
-            });
-          } else {
-            await axios.post(`${TELEGRAM_API}/sendMessage`, {
-              chat_id: req.body.message.chat.id,
-              text: mtext,
-              // reply_markup: JSON.stringify(keyBoard)
-            });
+          //token convert to main menu redirect
+          else if (customMsgFlag) {
+            customMsgFlag = false;
+            await axios
+              .post(`${TELEGRAM_API}/sendMessage`, {
+                chat_id: chatId,
+                text: initialTest,
+                reply_markup: JSON.stringify(keyBoard),
+              })
+              .catch((err) => {
+                console.log("I AM DONEeeee");
+              });
           }
-        } else if (req.body.message && req.body.message.left_chat_member) {
-          console.log("left_chat_member");
-          await axios
-            .post(`${TELEGRAM_API}/sendMessage`, {
-              chat_id: chat_id,
-              text: text,
-            })
-            .catch((er) => {
-              console.log("ERRROR", er);
-            });
-        } else if (req.body.message && req.body.message.new_chat_member) {
-          console.log("new_chat_member");
-          await axios
-            .post(`${TELEGRAM_API}/sendMessage`, {
-              chat_id: chat_id,
-              text: text,
-            })
-            .catch((er) => {
-              console.log("ERRROR", er);
-            });
-        } else if (req.body.my_chat_member) {
-          console.log("I AM HERE =======================",);
-          await axios.post(`${TELEGRAM_API}/sendMessage`, {
-            chat_id: req.body.my_chat_member.chat.id,
-            text: `Hii`,
-          });
-        }
-        //token convert to main menu redirect
-        else if (customMsgFlag) {
-          customMsgFlag = false;
-          await axios
-            .post(`${TELEGRAM_API}/sendMessage`, {
-              chat_id: chatId,
-              text: initialTest,
-              reply_markup: JSON.stringify(keyBoard),
-            })
-            .catch((err) => {
-              console.log("I AM DONEeeee");
-            });
-        }
-        //token convert to main menu redirect
-        else if (liquidityPool) {
-          liquidityPool = false;
-          await axios
-            .post(`${TELEGRAM_API}/sendMessage`, {
-              chat_id: chatId,
-              text: initialTest,
-              reply_markup: JSON.stringify(keyBoard),
-            })
-            .catch((err) => {
-              console.log("I AM DONEeeee");
-            });
-        }
-        //token convert to main menu redirect
-        else if (btcToLtcFlag) {
-          btcToLtcFlag = false;
-          console.log("ASDASDADADASDASDADADASDASDADADs", keyBoard);
-          console.log("ASDASDADADASDASDADADASDASDADADs", initialTest);
-          await axios
-            .post(`${TELEGRAM_API}/sendMessage`, {
-              chat_id: chatId,
-              text: initialTest,
-              reply_markup: JSON.stringify(keyBoard),
-            })
-            .catch((err) => {
-              console.log("btcToLtcFlag ",err);
-              axios.post(`${TELEGRAM_API}/sendMessage`, {
+          //token convert to main menu redirect
+          else if (liquidityPool) {
+            liquidityPool = false;
+            await axios
+              .post(`${TELEGRAM_API}/sendMessage`, {
                 chat_id: chatId,
-                text: 'CURRENCY CONVERT ERROR',
+                text: initialTest,
+                reply_markup: JSON.stringify(keyBoard),
               })
-            });
-        }
-        //token convert to main menu redirect
-        else if (equivalentFlag) {
-          equivalentFlag = false;
-          await axios
-            .post(`${TELEGRAM_API}/sendMessage`, {
-              chat_id: chatId,
-              text: initialTest,
-              reply_markup: JSON.stringify(keyBoard),
-            })
-            .catch((err) => {
-              console.log("equivalentFlag EROOR");
-              axios.post(`${TELEGRAM_API}/sendMessage`, {
+              .catch((err) => {
+                console.log("I AM DONEeeee");
+              });
+          }
+          //token convert to main menu redirect
+          else if (btcToLtcFlag) {
+            btcToLtcFlag = false;
+            console.log("ASDASDADADASDASDADADASDASDADADs", keyBoard);
+            console.log("ASDASDADADASDASDADADASDASDADADs", initialTest);
+            await axios
+              .post(`${TELEGRAM_API}/sendMessage`, {
                 chat_id: chatId,
-                text: `equivalentFlag ERROR`,
+                text: initialTest,
+                reply_markup: JSON.stringify(keyBoard),
               })
-            });
-        }
-        //token convert to main menu redirect
-        else if (mainMenu) {
-          mainMenu = false;
-          await axios
-            .post(`${TELEGRAM_API}/sendMessage`, {
-              chat_id: chatId,
-              text: initialTest,
-              reply_markup: JSON.stringify(keyBoard),
-            })
-            .catch((err) => {
-              console.log("I AM DONEeeee", err);
-            });
-        }
-        //btc To XGX reply
-        else if (liquidityRequest) {
-          liquidityRequest = false;
-          await axios
-            .post(`${TELEGRAM_API}/sendMessage`, {
-              chat_id: chatId,
-              text: initialTest,
-              reply_markup: JSON.stringify(keyBoard),
-            })
-            .catch((err) => {
-              console.log("I AM DONEeeee", err);
-            });
-        }
-        //btc To XGX reply
-        else if (btcToXGX) {
-          btcToXGX = false;
-          console.log("I AM HERE FINALLY btCTOXGX");
-          await axios
-            .post(`${TELEGRAM_API}/sendMessage`, {
-              chat_id: chatId,
-              text: initialTest,
-              reply_markup: JSON.stringify(keyBoard),
-            })
-            .catch((err) => {
-              console.log("I AM LOOKING FOR IT");
+              .catch((err) => {
+                console.log("btcToLtcFlag ", err);
+                axios.post(`${TELEGRAM_API}/sendMessage`, {
+                  chat_id: chatId,
+                  text: 'CURRENCY CONVERT ERROR',
+                })
+              });
+          }
+          //token convert to main menu redirect
+          else if (equivalentFlag) {
+            equivalentFlag = false;
+            await axios
+              .post(`${TELEGRAM_API}/sendMessage`, {
+                chat_id: chatId,
+                text: initialTest,
+                reply_markup: JSON.stringify(keyBoard),
+              })
+              .catch((err) => {
+                console.log("equivalentFlag EROOR");
+                axios.post(`${TELEGRAM_API}/sendMessage`, {
+                  chat_id: chatId,
+                  text: `equivalentFlag ERROR`,
+                })
+              });
+          }
+          //token convert to main menu redirect
+          else if (mainMenu) {
+            mainMenu = false;
+            await axios
+              .post(`${TELEGRAM_API}/sendMessage`, {
+                chat_id: chatId,
+                text: initialTest,
+                reply_markup: JSON.stringify(keyBoard),
+              })
+              .catch((err) => {
+                console.log("I AM DONEeeee", err);
+              });
+          }
+          //btc To XGX reply
+          else if (liquidityRequest) {
+            liquidityRequest = false;
+            await axios
+              .post(`${TELEGRAM_API}/sendMessage`, {
+                chat_id: chatId,
+                text: initialTest,
+                reply_markup: JSON.stringify(keyBoard),
+              })
+              .catch((err) => {
+                console.log("I AM DONEeeee", err);
+              });
+          }
+          //btc To XGX reply
+          else if (btcToXGX) {
+            btcToXGX = false;
+            console.log("I AM HERE FINALLY btCTOXGX");
+            await axios
+              .post(`${TELEGRAM_API}/sendMessage`, {
+                chat_id: chatId,
+                text: initialTest,
+                reply_markup: JSON.stringify(keyBoard),
+              })
+              .catch((err) => {
+                console.log("I AM LOOKING FOR IT");
 
-            });
-        }
-        //token convert reply
-        else if (tokenConvert) {
-          tokenConvert = false;
-          await axios
-            .post(`${TELEGRAM_API}/sendMessage`, {
-              chat_id: chatId,
-              text: initialTest,
-              reply_markup: JSON.stringify(keyBoard),
-            })
-            .catch((err) => {
-              console.log("I AM DONEeeee", err);
-              axios.post(`${TELEGRAM_API}/sendMessage`, {
+              });
+          }
+          //token convert reply
+          else if (tokenConvert) {
+            tokenConvert = false;
+            await axios
+              .post(`${TELEGRAM_API}/sendMessage`, {
                 chat_id: chatId,
-                text: 'I tokenConvert ',
+                text: initialTest,
+                reply_markup: JSON.stringify(keyBoard),
               })
-            });
-        } else if (text == "Claim Token") {
-          console.log("Claim Token CAlled");
-          let user_id = req.body.callback_query.from.id;
-          console.log("req.body.message.from.id", user_id);
-          let walletAddress;
-          let updateQuery = `UPDATE register_user SET token ="${0}" WHERE user_id = '${user_id}'`;
-          // let values = [req.body.message.from.id];
-          const tokenClaimDetails = `SELECT register_user.* , user_wallet.*
+              .catch((err) => {
+                console.log("I AM DONEeeee", err);
+                axios.post(`${TELEGRAM_API}/sendMessage`, {
+                  chat_id: chatId,
+                  text: 'I tokenConvert ',
+                })
+              });
+          } else if (text == "Claim Token") {
+            console.log("Claim Token CAlled");
+            let user_id = req.body.callback_query.from.id;
+            console.log("req.body.message.from.id", user_id);
+            let walletAddress;
+            let updateQuery = `UPDATE register_user SET token ="${0}" WHERE user_id = '${user_id}'`;
+            // let values = [req.body.message.from.id];
+            const tokenClaimDetails = `SELECT register_user.* , user_wallet.*
                     FROM register_user
                     JOIN user_wallet
                     ON register_user.user_wallet_id = user_wallet.id
                     WHERE register_user.user_id = '${user_id}' AND token = '${1}' ;`;
-          //check token claimed or not
-          conn.query(tokenClaimDetails, async (err, result) => {
-            if (err) {
-              // return res.status(501).json({
-              //     msg: "Number checking error",
-              //     error: err.message
-              // })
-              console.log("erro", err);
-              await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                chat_id: chatId,
-                text: `Server busy try again later...`,
-              });
-            } else if (result.length > 0) {
-              walletAddress = result[0].walletAddress;
-              //update table walletKey status
-              conn.query(updateQuery, async (err, result) => {
-                if (err) {
-                  // return res.status(501).json({
-                  //     msg: "Number checking error",
-                  //     error: err.message
-                  // })
-                  console.log("erro", err);
-                  await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                    chat_id: chatId,
-                    text: `Server busy try again later...`,
-                  });
-                } else {
-                  conn.query(updateQuery, async (err, result) => {
-                    if (err) {
-                      console.log("err-r", err);
-                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                        chat_id: chatId,
-                        text: `Server busy try again later...`,
-                      });
-                    }
-                  });
-                  //call token send function
-                  // sendTestBnb(walletAddress)
-                  await sendXGXToken(walletAddress, 500)
-                    .then(async (res) => {
-                      if (res) {
-                        await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                          chat_id: chatId,
-                          text: `Token has been sended into your wallet`,
-                        });
-                      } else {
+            //check token claimed or not
+            conn.query(tokenClaimDetails, async (err, result) => {
+              if (err) {
+                // return res.status(501).json({
+                //     msg: "Number checking error",
+                //     error: err.message
+                // })
+                console.log("erro", err);
+                await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                  chat_id: chatId,
+                  text: `Server busy try again later...`,
+                });
+              } else if (result.length > 0) {
+                walletAddress = result[0].walletAddress;
+                //update table walletKey status
+                conn.query(updateQuery, async (err, result) => {
+                  if (err) {
+                    // return res.status(501).json({
+                    //     msg: "Number checking error",
+                    //     error: err.message
+                    // })
+                    console.log("erro", err);
+                    await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                      chat_id: chatId,
+                      text: `Server busy try again later...`,
+                    });
+                  } else {
+                    conn.query(updateQuery, async (err, result) => {
+                      if (err) {
+                        console.log("err-r", err);
                         await axios.post(`${TELEGRAM_API}/sendMessage`, {
                           chat_id: chatId,
                           text: `Server busy try again later...`,
                         });
                       }
-                    })
-                    .catch(async (er) => {
-                      console.log("er", er);
-                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                        chat_id: chatId,
-                        text: `Server busy try again later...`,
-                      });
                     });
-                }
-              });
-            } else {
-              await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                chat_id: chatId,
-                text: `This wallet has already claimed it's token`,
-              });
-            }
-          });
+                    //call token send function
+                    // sendTestBnb(walletAddress)
+                    await sendXGXToken(walletAddress, 500)
+                      .then(async (res) => {
+                        if (res) {
+                          await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                            chat_id: chatId,
+                            text: `Token has been sended into your wallet`,
+                          });
+                        } else {
+                          await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                            chat_id: chatId,
+                            text: `Server busy try again later...`,
+                          });
+                        }
+                      })
+                      .catch(async (er) => {
+                        console.log("er", er);
+                        await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                          chat_id: chatId,
+                          text: `Server busy try again later...`,
+                        });
+                      });
+                  }
+                });
+              } else {
+                await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                  chat_id: chatId,
+                  text: `This wallet has already claimed it's token`,
+                });
+              }
+            });
 
-          const mtext =
-            "Write the following available commands:\n/all - for all available commands";
+            const mtext =
+              "Write the following available commands:\n/all - for all available commands";
 
-          await axios.post(`${TELEGRAM_API}/sendMessage`, {
-            chat_id: req.body.callback_query.message.chat.id,
-            text: mtext,
-            reply_markup: JSON.stringify(keyBoard),
-          });
-        } else if (text == "Claim NFT") {
-          let NTFMSG = "Wait for next round";
+            await axios.post(`${TELEGRAM_API}/sendMessage`, {
+              chat_id: req.body.callback_query.message.chat.id,
+              text: mtext,
+              reply_markup: JSON.stringify(keyBoard),
+            });
+          } else if (text == "Claim NFT") {
+            let NTFMSG = "Wait for next round";
 
-          await axios.post(`${TELEGRAM_API}/sendMessage`, {
-            chat_id: req.body.callback_query.message.chat.id,
-            text: NTFMSG,
-          });
+            await axios.post(`${TELEGRAM_API}/sendMessage`, {
+              chat_id: req.body.callback_query.message.chat.id,
+              text: NTFMSG,
+            });
 
-          const mtext =
-            "Write the following available commands:\n/all - for all available commands";
+            const mtext =
+              "Write the following available commands:\n/all - for all available commands";
 
-          await axios.post(`${TELEGRAM_API}/sendMessage`, {
-            chat_id: req.body.callback_query.message.chat.id,
-            text: mtext,
-            reply_markup: JSON.stringify(keyBoard),
-          });
-        } else if (text == "Claim Watch Wallet") {
-          let NTFMSG = "Wait for next round";
+            await axios.post(`${TELEGRAM_API}/sendMessage`, {
+              chat_id: req.body.callback_query.message.chat.id,
+              text: mtext,
+              reply_markup: JSON.stringify(keyBoard),
+            });
+          } else if (text == "Claim Watch Wallet") {
+            let NTFMSG = "Wait for next round";
 
-          await axios.post(`${TELEGRAM_API}/sendMessage`, {
-            chat_id: req.body.callback_query.message.chat.id,
-            text: NTFMSG,
-          });
+            await axios.post(`${TELEGRAM_API}/sendMessage`, {
+              chat_id: req.body.callback_query.message.chat.id,
+              text: NTFMSG,
+            });
 
-          const mtext =
-            "Write the following available commands:\n/all - for all available commands";
+            const mtext =
+              "Write the following available commands:\n/all - for all available commands";
 
-          await axios.post(`${TELEGRAM_API}/sendMessage`, {
-            chat_id: req.body.callback_query.message.chat.id,
-            text: mtext,
-            reply_markup: JSON.stringify(keyBoard),
-          });
-        } else if (text == "Claim Mining PC") {
-          let NTFMSG = "Wait for next round";
+            await axios.post(`${TELEGRAM_API}/sendMessage`, {
+              chat_id: req.body.callback_query.message.chat.id,
+              text: mtext,
+              reply_markup: JSON.stringify(keyBoard),
+            });
+          } else if (text == "Claim Mining PC") {
+            let NTFMSG = "Wait for next round";
 
-          await axios.post(`${TELEGRAM_API}/sendMessage`, {
-            chat_id: req.body.callback_query.message.chat.id,
-            text: NTFMSG,
-          });
+            await axios.post(`${TELEGRAM_API}/sendMessage`, {
+              chat_id: req.body.callback_query.message.chat.id,
+              text: NTFMSG,
+            });
 
-          const mtext =
-            "Write the following available commands:\n/all - for all available commands";
+            const mtext =
+              "Write the following available commands:\n/all - for all available commands";
 
-          await axios.post(`${TELEGRAM_API}/sendMessage`, {
-            chat_id: req.body.callback_query.message.chat.id,
-            text: mtext,
-            reply_markup: JSON.stringify(keyBoard),
-          });
-        } else if (text == "Claim Swap Token Distribution") {
-          let NTFMSG = "Wait for next round";
+            await axios.post(`${TELEGRAM_API}/sendMessage`, {
+              chat_id: req.body.callback_query.message.chat.id,
+              text: mtext,
+              reply_markup: JSON.stringify(keyBoard),
+            });
+          } else if (text == "Claim Swap Token Distribution") {
+            let NTFMSG = "Wait for next round";
 
-          await axios.post(`${TELEGRAM_API}/sendMessage`, {
-            chat_id: req.body.callback_query.message.chat.id,
-            text: NTFMSG,
-          });
+            await axios.post(`${TELEGRAM_API}/sendMessage`, {
+              chat_id: req.body.callback_query.message.chat.id,
+              text: NTFMSG,
+            });
 
-          const mtext =
-            "Write the following available commands:\n/all - for all available commands";
+            const mtext =
+              "Write the following available commands:\n/all - for all available commands";
 
-          await axios.post(`${TELEGRAM_API}/sendMessage`, {
-            chat_id: req.body.callback_query.message.chat.id,
-            text: mtext,
-            reply_markup: JSON.stringify(keyBoard),
-          });
-        } else if (text == "Check Wallet Token") {
-          let user_id = req.body.callback_query.from.id;
+            await axios.post(`${TELEGRAM_API}/sendMessage`, {
+              chat_id: req.body.callback_query.message.chat.id,
+              text: mtext,
+              reply_markup: JSON.stringify(keyBoard),
+            });
+          } else if (text == "Check Wallet Token") {
+            let user_id = req.body.callback_query.from.id;
 
-          let tokenBalance;
+            let tokenBalance;
 
-          const userndUserRegisterQuery = `SELECT register_user.* , user_wallet.*
+            const userndUserRegisterQuery = `SELECT register_user.* , user_wallet.*
                     FROM register_user
                     JOIN user_wallet
                     ON register_user.user_wallet_id = user_wallet.id
                     WHERE register_user.user_id = '${user_id}'`;
 
-          conn.query(userndUserRegisterQuery, async (err, result) => {
-            if (err) {
-              // return res.status(501).json({
-              //     msg: "Number checking error",
-              //     error: err.message
-              // })
-              console.log("erro", err);
-              await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                chat_id: chatId,
-                text: `Server busy try again later...`,
-              });
-            } else if (result.length > 0) {
-              console.log("result", result);
-              await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                chat_id: req.body.callback_query.message.chat.id,
-                text: NTFMSG,
-              });
-              await givenTokenBalance(result[0].walletAddress)
-                .then((res) => {
-                  tokenBalance = `Your wallet holds ${res} token`;
-                })
-                .catch((err) => {
-                  console.log("err", err);
+            conn.query(userndUserRegisterQuery, async (err, result) => {
+              if (err) {
+                // return res.status(501).json({
+                //     msg: "Number checking error",
+                //     error: err.message
+                // })
+                console.log("erro", err);
+                await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                  chat_id: chatId,
+                  text: `Server busy try again later...`,
                 });
+              } else if (result.length > 0) {
+                console.log("result", result);
+                await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                  chat_id: req.body.callback_query.message.chat.id,
+                  text: NTFMSG,
+                });
+                await givenTokenBalance(result[0].walletAddress)
+                  .then((res) => {
+                    tokenBalance = `Your wallet holds ${res} token`;
+                  })
+                  .catch((err) => {
+                    console.log("err", err);
+                  });
 
-              await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                chat_id: req.body.callback_query.message.chat.id,
-                text: tokenBalance,
-              });
-              const mtext =
-                "Write the following available commands:\n/all - for all available commands";
+                await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                  chat_id: req.body.callback_query.message.chat.id,
+                  text: tokenBalance,
+                });
+                const mtext =
+                  "Write the following available commands:\n/all - for all available commands";
 
-              await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                chat_id: req.body.callback_query.message.chat.id,
-                text: mtext,
-                reply_markup: JSON.stringify(keyBoard),
-              });
-            } else {
-              await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                chat_id: chatId,
-                text: `Server busy try again later...`,
-              });
-            }
-          });
-        } else if (text == "PROCESS TO PAYMENT") {
-          let tempKeyBoard = {
-            inline_keyboard: [
-              [
-                {
-                  text: "CONFIRM PAYMENT",
-                  callback_data: "CONFIRM PAYMENT",
-                },
+                await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                  chat_id: req.body.callback_query.message.chat.id,
+                  text: mtext,
+                  reply_markup: JSON.stringify(keyBoard),
+                });
+              } else {
+                await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                  chat_id: chatId,
+                  text: `Server busy try again later...`,
+                });
+              }
+            });
+          } else if (text == "PROCESS TO PAYMENT") {
+            let tempKeyBoard = {
+              inline_keyboard: [
+                [
+                  {
+                    text: "CONFIRM PAYMENT",
+                    callback_data: "CONFIRM PAYMENT",
+                  },
+                ],
+                [
+                  {
+                    text: "MAIN MENU",
+                    callback_data: "MAIN MENU",
+                  },
+                ],
               ],
-              [
-                {
-                  text: "MAIN MENU",
-                  callback_data: "MAIN MENU",
-                },
+            };
+
+            let tempKeyBoard1 = {
+              inline_keyboard: [
+                [
+                  {
+                    text: "CONFIRM PAYMENT",
+                    callback_data: "CONFIRM PAYMENT",
+                  },
+                ],
+                [
+                  {
+                    text: "MAIN MENU",
+                    callback_data: "MAIN MENU",
+                  },
+                ],
               ],
-            ],
-          };
+            };
 
-          let tempKeyBoard1 = {
-            inline_keyboard: [
-              [
-                {
-                  text: "CONFIRM PAYMENT",
-                  callback_data: "CONFIRM PAYMENT",
-                },
-              ],
-              [
-                {
-                  text: "MAIN MENU",
-                  callback_data: "MAIN MENU",
-                },
-              ],
-            ],
-          };
+            let otp = Math.floor(1000 + Math.random() * 9000);
+            let user_wallet_id;
 
-          let otp = Math.floor(1000 + Math.random() * 9000);
-          let user_wallet_id;
+            //Generate eth address with private key
+            let account = await web3.eth.accounts.create();
 
-          //Generate eth address with private key
-          let account = await web3.eth.accounts.create();
+            //Generate lit coin address with private key
+            let privateKeyLTC = new litecore.PrivateKey("testnet");
+            // let privateKeyLTC = new litecore.PrivateKey();
+            let addressLTC = privateKeyLTC.toAddress();
+            //Generate Bit coin address with private key
+            let privateKeyWIF = bitcore.PrivateKey("testnet").toWIF();
+            // let privateKeyWIF = bitcore.PrivateKey().toWIF();
+            let privateKeyBTC = bitcore.PrivateKey.fromWIF(privateKeyWIF);
+            let addressBTC = privateKeyBTC.toAddress();
 
-          //Generate lit coin address with private key
-          let privateKeyLTC = new litecore.PrivateKey("testnet");
-          // let privateKeyLTC = new litecore.PrivateKey();
-          let addressLTC = privateKeyLTC.toAddress();
-          //Generate Bit coin address with private key
-          let privateKeyWIF = bitcore.PrivateKey("testnet").toWIF();
-          // let privateKeyWIF = bitcore.PrivateKey().toWIF();
-          let privateKeyBTC = bitcore.PrivateKey.fromWIF(privateKeyWIF);
-          let addressBTC = privateKeyBTC.toAddress();
+            let userPrivateWallet =
+              "INSERT INTO user_private_wallet (id, user_wallet_id, privateKey, walletAddress, walletType) VALUES (?);";
 
-          let userPrivateWallet =
-            "INSERT INTO user_private_wallet (id, user_wallet_id, privateKey, walletAddress, walletType) VALUES (?);";
+            console.log("PROCESS TO PAYMENT");
+            let user_id = req.body.callback_query.from.id;
+            console.log("req.body.message.from.id", user_id);
 
-          console.log("PROCESS TO PAYMENT");
-          let user_id = req.body.callback_query.from.id;
-          console.log("req.body.message.from.id", user_id);
+            let updateQuery = `UPDATE register_user SET token ="${0}" WHERE user_id = '${user_id}'`;
+            // let values = [req.body.message.from.id];
+            const userWalletExist = `SELECT * FROM register_user WHERE user_id LIKE '${user_id}';`;
+            //create user wallet
+            let personalWalletQuery =
+              "INSERT INTO user_wallet (id, walletAddress, privateKey, amount, otp) VALUES (?);";
+            let personalWalletData = [
+              null,
+              account.address,
+              account.privateKey,
+              0,
+              otp,
+            ];
 
-          let updateQuery = `UPDATE register_user SET token ="${0}" WHERE user_id = '${user_id}'`;
-          // let values = [req.body.message.from.id];
-          const userWalletExist = `SELECT * FROM register_user WHERE user_id LIKE '${user_id}';`;
-          //create user wallet
-          let personalWalletQuery =
-            "INSERT INTO user_wallet (id, walletAddress, privateKey, amount, otp) VALUES (?);";
-          let personalWalletData = [
-            null,
-            account.address,
-            account.privateKey,
-            0,
-            otp,
-          ];
+            //register user query
+            let registereDuserQuery =
+              "INSERT INTO register_user (id, user_wallet_id,user_id,token,nft,watch,miningPc,swapToken) VALUES (?);";
+            conn.query(userWalletExist, async (err, result) => {
+              if (err) {
+                console.log("error", err);
+                await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                  chat_id: chatId,
+                  text: "Server is busy try again...",
+                });
+              }
+              //user found
+              else if (result.length > 0) {
+                await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                  chat_id: chatId,
+                  text: `Your are already registered.\nPlease make the payment and Click on CONFIRM PAYMENT`,
+                  reply_markup: JSON.stringify(tempKeyBoard1),
+                });
+              }
+              //did not found user then create userWallet
+              else {
+                conn.query(
+                  personalWalletQuery,
+                  [personalWalletData],
+                  async (err, result, fields) => {
+                    if (err) {
+                      console.log("error", err);
+                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: "Server is busy try again...",
+                      });
+                    }
+                    //create register user details
+                    else {
+                      user_wallet_id = result.insertId;
+                      let registeredUserData = [
+                        null,
+                        user_wallet_id,
+                        req.body.callback_query.from.id,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                      ];
+                      conn.query(
+                        registereDuserQuery,
+                        [registeredUserData],
+                        async (err, result, fields) => {
+                          if (err) {
+                            await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                              chat_id: chatId,
+                              text: "Server is busy try again...",
+                            });
+                          } else {
+                            let bitcoinWalletData = [
+                              null,
+                              user_wallet_id,
+                              privateKeyBTC,
+                              addressBTC,
+                              "BTC",
+                            ];
+                            let litecoinWalletData = [
+                              null,
+                              user_wallet_id,
+                              privateKeyLTC,
+                              addressLTC,
+                              "LTC",
+                            ];
+                            let ethWalletData = [
+                              null,
+                              user_wallet_id,
+                              account.privateKey,
+                              account.address,
+                              "ETH",
+                            ];
 
-          //register user query
-          let registereDuserQuery =
-            "INSERT INTO register_user (id, user_wallet_id,user_id,token,nft,watch,miningPc,swapToken) VALUES (?);";
-          conn.query(userWalletExist, async (err, result) => {
-            if (err) {
-              console.log("error", err);
-              await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                chat_id: chatId,
-                text: "Server is busy try again...",
-              });
-            }
-            //user found
-            else if (result.length > 0) {
-              await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                chat_id: chatId,
-                text: `Your are already registered.\nPlease make the payment and Click on CONFIRM PAYMENT`,
-                reply_markup: JSON.stringify(tempKeyBoard1),
-              });
-            }
-            //did not found user then create userWallet
-            else {
-              conn.query(
-                personalWalletQuery,
-                [personalWalletData],
-                async (err, result, fields) => {
-                  if (err) {
-                    console.log("error", err);
-                    await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                      chat_id: chatId,
-                      text: "Server is busy try again...",
-                    });
-                  }
-                  //create register user details
-                  else {
-                    user_wallet_id = result.insertId;
-                    let registeredUserData = [
-                      null,
-                      user_wallet_id,
-                      req.body.callback_query.from.id,
-                      1,
-                      1,
-                      1,
-                      1,
-                      1,
-                    ];
-                    conn.query(
-                      registereDuserQuery,
-                      [registeredUserData],
-                      async (err, result, fields) => {
-                        if (err) {
-                          await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                            chat_id: chatId,
-                            text: "Server is busy try again...",
-                          });
-                        } else {
-                          let bitcoinWalletData = [
-                            null,
-                            user_wallet_id,
-                            privateKeyBTC,
-                            addressBTC,
-                            "BTC",
-                          ];
-                          let litecoinWalletData = [
-                            null,
-                            user_wallet_id,
-                            privateKeyLTC,
-                            addressLTC,
-                            "LTC",
-                          ];
-                          let ethWalletData = [
-                            null,
-                            user_wallet_id,
-                            account.privateKey,
-                            account.address,
-                            "ETH",
-                          ];
-
-                          conn.query(
-                            userPrivateWallet,
-                            [bitcoinWalletData],
-                            async (err, result, fields) => {
-                              if (err) {
-                                console.log("BTC Wallet ERROR", err);
-                              } else {
-                                console.log("BTC Wallet CREATE");
+                            conn.query(
+                              userPrivateWallet,
+                              [bitcoinWalletData],
+                              async (err, result, fields) => {
+                                if (err) {
+                                  console.log("BTC Wallet ERROR", err);
+                                } else {
+                                  console.log("BTC Wallet CREATE");
+                                }
                               }
-                            }
-                          );
-                          conn.query(
-                            userPrivateWallet,
-                            [litecoinWalletData],
-                            async (err, result, fields) => {
-                              if (err) {
-                                console.log("LTC Wallet ERROR", err);
-                              } else {
-                                console.log("LTC Wallet CREATE");
+                            );
+                            conn.query(
+                              userPrivateWallet,
+                              [litecoinWalletData],
+                              async (err, result, fields) => {
+                                if (err) {
+                                  console.log("LTC Wallet ERROR", err);
+                                } else {
+                                  console.log("LTC Wallet CREATE");
+                                }
                               }
-                            }
-                          );
-                          conn.query(
-                            userPrivateWallet,
-                            [ethWalletData],
-                            async (err, result, fields) => {
-                              if (err) {
-                                console.log("ETH Wallet ERROR", err);
-                              } else {
-                                console.log("ETH Wallet CREATE");
+                            );
+                            conn.query(
+                              userPrivateWallet,
+                              [ethWalletData],
+                              async (err, result, fields) => {
+                                if (err) {
+                                  console.log("ETH Wallet ERROR", err);
+                                } else {
+                                  console.log("ETH Wallet CREATE");
+                                }
                               }
-                            }
-                          );
+                            );
 
-                          await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                            chat_id: chatId,
-                            text: "Please checkout your inbox.We have provided you with all details",
-                            reply_markup: JSON.stringify(tempKeyBoard),
-                          });
+                            await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                              chat_id: chatId,
+                              text: "Please checkout your inbox.We have provided you with all details",
+                              reply_markup: JSON.stringify(tempKeyBoard),
+                            });
 
-                          await axios
-                            .post(`${TELEGRAM_API}/sendMessage`, {
-                              chat_id: user_id,
-                              text: `Your Verification code is ${otp}\nDon't share it with anyone.\n
+                            await axios
+                              .post(`${TELEGRAM_API}/sendMessage`, {
+                                chat_id: user_id,
+                                text: `Your Verification code is ${otp}\nDon't share it with anyone.\n
                                                 Bitcoin wallet address - ${addressBTC}\n
                                                 Ethereum wallet address - ${account.address}\n
                                                 Litecoin wallet address - ${addressLTC}\n
                                                 Binance Coin wallet address - ${account.address}\n`,
-                            })
-                            .catch(async (err) => {
-                              console.log("error", err);
-                              await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                                chat_id: chatId,
-                                text: "Server is busy try again...",
+                              })
+                              .catch(async (err) => {
+                                console.log("error", err);
+                                await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                                  chat_id: chatId,
+                                  text: "Server is busy try again...",
+                                });
                               });
-                            });
+                          }
                         }
-                      }
-                    );
+                      );
+                    }
                   }
-                }
-              );
-            }
-          });
-        } else if (text == "CONFIRM PAYMENT") {
-          let tempKeyBoard = {
-            inline_keyboard: [
-              [
-                {
-                  text: "CONFIRM PAYMENT",
-                  callback_data: "CONFIRM PAYMENT",
-                },
+                );
+              }
+            });
+          } else if (text == "CONFIRM PAYMENT") {
+            let tempKeyBoard = {
+              inline_keyboard: [
+                [
+                  {
+                    text: "CONFIRM PAYMENT",
+                    callback_data: "CONFIRM PAYMENT",
+                  },
+                ],
+                [
+                  {
+                    text: "MAIN MENU",
+                    callback_data: "MAIN MENU",
+                  },
+                ],
               ],
-              [
-                {
-                  text: "MAIN MENU",
-                  callback_data: "MAIN MENU",
-                },
+            };
+            let tempKeyBoard1 = {
+              inline_keyboard: [
+                [
+                  {
+                    text: "MAIN MENU",
+                    callback_data: "MAIN MENU",
+                  },
+                ],
               ],
-            ],
-          };
-          let tempKeyBoard1 = {
-            inline_keyboard: [
-              [
-                {
-                  text: "MAIN MENU",
-                  callback_data: "MAIN MENU",
-                },
-              ],
-            ],
-          };
+            };
 
-          let user_id = req.body.callback_query.from.id;
-          let user_wallet_id;
-          let wallet_id;
-          let register_user_id;
-          const userWalletExist = `SELECT register_user.*,user_wallet.*
+            let user_id = req.body.callback_query.from.id;
+            let user_wallet_id;
+            let wallet_id;
+            let register_user_id;
+            const userWalletExist = `SELECT register_user.*,user_wallet.*
                     FROM register_user
                     JOIN user_wallet
                     ON register_user.user_wallet_id=user_wallet.id
                     WHERE register_user.user_id = '${user_id}' AND user_wallet.success = ${0};`;
 
-          conn.query(userWalletExist, async (err, result) => {
-            // console.log("result======", result.token)
-            // console.log("result++++++", result[0].token)
-            if (err) {
-              console.log("ERROR==============asdasdasdasdas", err);
-              return null;
-            } else if (result.length > 0) {
-              console.log("HERE======CONFRIM PAYMENT", result);
-              user_wallet_id = result[0].user_wallet_id;
-              register_user_id = result[0].id;
-              await checkWalletBalance(result[0].user_wallet_id, chatId, 1)
-                .then(async (res) => {
-                  if (
-                    res[0].balance ||
-                    res[1].balance ||
-                    res[2].balance ||
-                    res[3].balance
-                  ) {
-                    let total = 0;
-                    //ltc , bsc, btc , eth
-                    if (res[0].balance && Number(res[0].balance) > 0) {
-                      total += Number(res[0].balance) * ltcPrice;
-                      console.log("=======", res[0].balance * ltcPrice);
-                      // if ((Number(res[0].balance * ltcPrice)) > 200) {
-                      //     await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                      //         chat_id: chatId,
-                      //         text: `Your transaction is successful`
-                      //     })
-                      // } else {
-                      //     await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                      //         chat_id: chatId,
-                      //         text: `Your transaction is less than required\nPlease check the amount you have sended`
-                      //     })
-                      // }
-                    } else if (res[1].balance && Number(res[1].balance) > 0) {
-                      total += Number(res[1].balance) * bnbPrice;
-                      console.log("@@@@@@@@", res[1].balance * bnbPrice);
-                      // if ((Number(res[1] * bnbPrice)) > 200) {
-                      //     await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                      //         chat_id: chatId,
-                      //         text: `Your transaction is successful`
-                      //     })
-                      // } else {
-                      //     await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                      //         chat_id: chatId,
-                      //         text: `Your transaction is less than required\nPlease check the amount you have sended`
-                      //     })
-                      // }
-                    } else if (res[2].balance && Number(res[2].balance) > 0) {
-                      total += Number(res[2].balance) * btcPrice;
-                      console.log("ZZZZZZ", res[2].balance * btcPrice);
-                      // if ((Number(res[2] * btcPrice)) > 200) {
-                      //     await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                      //         chat_id: chatId,
-                      //         text: `Your transaction is successful`
-                      //     })
-                      // } else {
-                      //     await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                      //         chat_id: chatId,
-                      //         text: `Your transaction is less than required\nPlease check the amount you have sended`
-                      //     })
-                      // }
-                    } else if (res[3].balance && Number(res[3].balance) > 0) {
-                      total += Number(res[3].balance) * ethPrice;
-                      console.log(
-                        "SSSSSS",
-                        Number(res[3].balance * ethPrice) > 200
-                      );
+            conn.query(userWalletExist, async (err, result) => {
+              // console.log("result======", result.token)
+              // console.log("result++++++", result[0].token)
+              if (err) {
+                console.log("ERROR==============asdasdasdasdas", err);
+                return null;
+              } else if (result.length > 0) {
+                console.log("HERE======CONFRIM PAYMENT", result);
+                user_wallet_id = result[0].user_wallet_id;
+                register_user_id = result[0].id;
+                await checkWalletBalance(result[0].user_wallet_id, chatId, 1)
+                  .then(async (res) => {
+                    if (
+                      res[0].balance ||
+                      res[1].balance ||
+                      res[2].balance ||
+                      res[3].balance
+                    ) {
+                      let total = 0;
+                      //ltc , bsc, btc , eth
+                      if (res[0].balance && Number(res[0].balance) > 0) {
+                        total += Number(res[0].balance) * ltcPrice;
+                        console.log("=======", res[0].balance * ltcPrice);
+                        // if ((Number(res[0].balance * ltcPrice)) > 200) {
+                        //     await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        //         chat_id: chatId,
+                        //         text: `Your transaction is successful`
+                        //     })
+                        // } else {
+                        //     await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        //         chat_id: chatId,
+                        //         text: `Your transaction is less than required\nPlease check the amount you have sended`
+                        //     })
+                        // }
+                      } else if (res[1].balance && Number(res[1].balance) > 0) {
+                        total += Number(res[1].balance) * bnbPrice;
+                        console.log("@@@@@@@@", res[1].balance * bnbPrice);
+                        // if ((Number(res[1] * bnbPrice)) > 200) {
+                        //     await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        //         chat_id: chatId,
+                        //         text: `Your transaction is successful`
+                        //     })
+                        // } else {
+                        //     await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        //         chat_id: chatId,
+                        //         text: `Your transaction is less than required\nPlease check the amount you have sended`
+                        //     })
+                        // }
+                      } else if (res[2].balance && Number(res[2].balance) > 0) {
+                        total += Number(res[2].balance) * btcPrice;
+                        console.log("ZZZZZZ", res[2].balance * btcPrice);
+                        // if ((Number(res[2] * btcPrice)) > 200) {
+                        //     await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        //         chat_id: chatId,
+                        //         text: `Your transaction is successful`
+                        //     })
+                        // } else {
+                        //     await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        //         chat_id: chatId,
+                        //         text: `Your transaction is less than required\nPlease check the amount you have sended`
+                        //     })
+                        // }
+                      } else if (res[3].balance && Number(res[3].balance) > 0) {
+                        total += Number(res[3].balance) * ethPrice;
+                        console.log(
+                          "SSSSSS",
+                          Number(res[3].balance * ethPrice) > 200
+                        );
 
-                      // if ((Number(res[3].balance * ethPrice)) > 200) {
-                      //     createUserWallet(wallet_id, res[3].balance * ethPrice, walletAddress, req.body.message.from.id)
-                      //         .then(res => {
-                      //             console.log("resasdasd", res)
-                      //         }).catch(err => {
-                      //             console.log("errror", err)
-                      //         })
+                        // if ((Number(res[3].balance * ethPrice)) > 200) {
+                        //     createUserWallet(wallet_id, res[3].balance * ethPrice, walletAddress, req.body.message.from.id)
+                        //         .then(res => {
+                        //             console.log("resasdasd", res)
+                        //         }).catch(err => {
+                        //             console.log("errror", err)
+                        //         })
 
-                      //     await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                      //         chat_id: chatId,
-                      //         text: `Your transaction is successful`
-                      //     })
-                    }
-                    if (total > 200) {
-                      console.log("TOTAL", total);
-                      // let userAccountAddress
-                      // createUserWallet(wallet_id, res[3].balance * ethPrice, walletAddress, req.body.message.from.id)
-                      //     .then(async (res) => {
-                      //         console.log("resasdasd", res)
-                      //         userAccountAddress = res.accountPublicAddress
-                      //         register_user_id = res.register_user_id
-                      //     }).catch(async (err) => {
-                      //         console.log("errror", err)
-                      //         await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                      //             chat_id: chatId,
-                      //             text: `Server busy try again later...`
-                      //         })
-                      //     })
-                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                        chat_id: chatId,
-                        text: `Your transaction is successfull\nCheck your inbox.`,
-                      });
-                      //update the sucess with corresponding otp
-                      let updateWalletInfo = `UPDATE user_wallet SET success ="${1}" WHERE id = ${user_wallet_id}`;
-                      conn.query(
-                        updateWalletInfo,
-                        async (err, result, fields) => {
-                          if (err) {
-                            console.log("ERROADasdasd==========");
-                          } else {
-                            console.log("UPDATE CONFIRM");
+                        //     await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        //         chat_id: chatId,
+                        //         text: `Your transaction is successful`
+                        //     })
+                      }
+
+                      if (total >= 5000) {
+                        console.log("TOTAL", total);
+                        // let userAccountAddress
+                        // createUserWallet(wallet_id, res[3].balance * ethPrice, walletAddress, req.body.message.from.id)
+                        //     .then(async (res) => {
+                        //         console.log("resasdasd", res)
+                        //         userAccountAddress = res.accountPublicAddress
+                        //         register_user_id = res.register_user_id
+                        //     }).catch(async (err) => {
+                        //         console.log("errror", err)
+                        //         await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        //             chat_id: chatId,
+                        //             text: `Server busy try again later...`
+                        //         })
+                        //     })
+                        await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                          chat_id: chatId,
+                          text: `Your transaction is successfull\nCheck your inbox.`,
+                        });
+                        //update the sucess with corresponding otp
+                        let updateWalletInfo = `UPDATE user_wallet SET success ="${1}" WHERE id = ${user_wallet_id}`;
+                        conn.query(
+                          updateWalletInfo,
+                          async (err, result, fields) => {
+                            if (err) {
+                              console.log("ERROADasdasd==========");
+                            } else {
+                              console.log("UPDATE CONFIRM");
+                            }
                           }
-                        }
-                      );
-                      //create group_info with registered_user_id
-                      let groupInfoQuery =
-                        "INSERT INTO group_info (id, groupName,groupId,register_user_id) VALUES (?);";
-                      let groupInfoData = [
-                        null,
-                        firstGroupName,
-                        firstGroupId,
-                        register_user_id,
-                      ];
-                      conn.query(
-                        groupInfoQuery,
-                        [groupInfoData],
-                        async (err, result, fields) => {
-                          if (err) {
-                            console.log("err 2", err);
-                            await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                              chat_id: chatId,
-                              text: `Server busy try again later...`,
-                            });
-                          } else {
-                            await getUserWalletDetails(user_wallet_id)
-                              .then(async (res) => {
-                                await axios.post(
-                                  `${TELEGRAM_API}/sendMessage`,
-                                  {
-                                    chat_id: req.body.callback_query.from.id,
-                                    text: `Transaction was successfull\nYour wallet address is ${res[0].walletAddress}\nDon't share it with anyone.\nJoin here ${stageOneGroupUrl} and claim your token and see gift-box status`,
-                                  }
-                                );
-
-                                await axios.post(
-                                  `${TELEGRAM_API}/sendMessage`,
-                                  {
-                                    chat_id: chatId,
-                                    text: `Your transaction is less than required\nPlease check the amount you have sended`,
-                                    reply_markup: JSON.stringify(tempKeyBoard1),
-                                  }
-                                );
-                              })
-                              .catch(async (er) => {
-                                console.log("CONFRIM PAYMENT ERROR ", er);
-                                await axios.post(
-                                  `${TELEGRAM_API}/sendMessage`,
-                                  {
-                                    chat_id: chatId,
-                                    text: `Server busy try again later...`,
-                                  }
-                                );
+                        );
+                        //create group_info with registered_user_id
+                        let groupInfoQuery =
+                          "INSERT INTO group_info (id, groupName,groupId,register_user_id) VALUES (?);";
+                        let groupInfoData = [
+                          null,
+                          PlatinumGroup.name,
+                          PlatinumGroup.id,
+                          register_user_id,
+                        ];
+                        conn.query(
+                          groupInfoQuery,
+                          [groupInfoData],
+                          async (err, result, fields) => {
+                            if (err) {
+                              console.log("err 2", err);
+                              await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                                chat_id: chatId,
+                                text: `Server busy try again later...`,
                               });
+                            } else {
+                              await getUserWalletDetails(user_wallet_id)
+                                .then(async (res) => {
+                                  await axios.post(
+                                    `${TELEGRAM_API}/sendMessage`,
+                                    {
+                                      chat_id: req.body.callback_query.from.id,
+                                      text: `Transaction was successfull\nYour wallet address is ${res[0].walletAddress}\nDon't share it with anyone.\nJoin here ${PlatinumGroup.link} and claim your token and see gift-box status`,
+                                    }
+                                  );
+
+                                  await axios.post(
+                                    `${TELEGRAM_API}/sendMessage`,
+                                    {
+                                      chat_id: chatId,
+                                      text: `Your transaction is less than required\nPlease check the amount you have sended`,
+                                      reply_markup: JSON.stringify(tempKeyBoard1),
+                                    }
+                                  );
+                                })
+                                .catch(async (er) => {
+                                  console.log("CONFRIM PAYMENT ERROR ", er);
+                                  await axios.post(
+                                    `${TELEGRAM_API}/sendMessage`,
+                                    {
+                                      chat_id: chatId,
+                                      text: `Server busy try again later...`,
+                                    }
+                                  );
+                                });
+                            }
                           }
-                        }
-                      );
+                        );
+                      }
+                      else if (total >= 1000) {
+                        console.log("TOTAL", total);
+                        // let userAccountAddress
+                        // createUserWallet(wallet_id, res[3].balance * ethPrice, walletAddress, req.body.message.from.id)
+                        //     .then(async (res) => {
+                        //         console.log("resasdasd", res)
+                        //         userAccountAddress = res.accountPublicAddress
+                        //         register_user_id = res.register_user_id
+                        //     }).catch(async (err) => {
+                        //         console.log("errror", err)
+                        //         await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        //             chat_id: chatId,
+                        //             text: `Server busy try again later...`
+                        //         })
+                        //     })
+                        await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                          chat_id: chatId,
+                          text: `Your transaction is successfull\nCheck your inbox.`,
+                        });
+                        //update the sucess with corresponding otp
+                        let updateWalletInfo = `UPDATE user_wallet SET success ="${1}" WHERE id = ${user_wallet_id}`;
+                        conn.query(
+                          updateWalletInfo,
+                          async (err, result, fields) => {
+                            if (err) {
+                              console.log("ERROADasdasd==========");
+                            } else {
+                              console.log("UPDATE CONFIRM");
+                            }
+                          }
+                        );
+                        //create group_info with registered_user_id
+                        let groupInfoQuery =
+                          "INSERT INTO group_info (id, groupName,groupId,register_user_id) VALUES (?);";
+                        let groupInfoData = [
+                          null,
+                          GoldGroup.name,
+                          GoldGroup.id,
+                          register_user_id,
+                        ];
+                        conn.query(
+                          groupInfoQuery,
+                          [groupInfoData],
+                          async (err, result, fields) => {
+                            if (err) {
+                              console.log("err 2", err);
+                              await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                                chat_id: chatId,
+                                text: `Server busy try again later...`,
+                              });
+                            } else {
+                              await getUserWalletDetails(user_wallet_id)
+                                .then(async (res) => {
+                                  await axios.post(
+                                    `${TELEGRAM_API}/sendMessage`,
+                                    {
+                                      chat_id: req.body.callback_query.from.id,
+                                      text: `Transaction was successfull\nYour wallet address is ${res[0].walletAddress}\nDon't share it with anyone.\nJoin here ${GoldGroup.link} and claim your token and see gift-box status`,
+                                    }
+                                  );
+
+                                  await axios.post(
+                                    `${TELEGRAM_API}/sendMessage`,
+                                    {
+                                      chat_id: chatId,
+                                      text: `Your transaction is less than required\nPlease check the amount you have sended`,
+                                      reply_markup: JSON.stringify(tempKeyBoard1),
+                                    }
+                                  );
+                                })
+                                .catch(async (er) => {
+                                  console.log("CONFRIM PAYMENT ERROR ", er);
+                                  await axios.post(
+                                    `${TELEGRAM_API}/sendMessage`,
+                                    {
+                                      chat_id: chatId,
+                                      text: `Server busy try again later...`,
+                                    }
+                                  );
+                                });
+                            }
+                          }
+                        );
+                      }
+                      else if (total >= 500) {
+                        console.log("TOTAL", total);
+                        // let userAccountAddress
+                        // createUserWallet(wallet_id, res[3].balance * ethPrice, walletAddress, req.body.message.from.id)
+                        //     .then(async (res) => {
+                        //         console.log("resasdasd", res)
+                        //         userAccountAddress = res.accountPublicAddress
+                        //         register_user_id = res.register_user_id
+                        //     }).catch(async (err) => {
+                        //         console.log("errror", err)
+                        //         await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        //             chat_id: chatId,
+                        //             text: `Server busy try again later...`
+                        //         })
+                        //     })
+                        await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                          chat_id: chatId,
+                          text: `Your transaction is successfull\nCheck your inbox.`,
+                        });
+                        //update the sucess with corresponding otp
+                        let updateWalletInfo = `UPDATE user_wallet SET success ="${1}" WHERE id = ${user_wallet_id}`;
+                        conn.query(
+                          updateWalletInfo,
+                          async (err, result, fields) => {
+                            if (err) {
+                              console.log("ERROADasdasd==========");
+                            } else {
+                              console.log("UPDATE CONFIRM");
+                            }
+                          }
+                        );
+                        //create group_info with registered_user_id
+                        let groupInfoQuery =
+                          "INSERT INTO group_info (id, groupName,groupId,register_user_id) VALUES (?);";
+                        let groupInfoData = [
+                          null,
+                          TitaniumGroup.name,
+                          TitaniumGroup.id,
+                          register_user_id,
+                        ];
+                        conn.query(
+                          groupInfoQuery,
+                          [groupInfoData],
+                          async (err, result, fields) => {
+                            if (err) {
+                              console.log("err 2", err);
+                              await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                                chat_id: chatId,
+                                text: `Server busy try again later...`,
+                              });
+                            } else {
+                              await getUserWalletDetails(user_wallet_id)
+                                .then(async (res) => {
+                                  await axios.post(
+                                    `${TELEGRAM_API}/sendMessage`,
+                                    {
+                                      chat_id: req.body.callback_query.from.id,
+                                      text: `Transaction was successfull\nYour wallet address is ${res[0].walletAddress}\nDon't share it with anyone.\nJoin here ${TitaniumGroup.link} and claim your token and see gift-box status`,
+                                    }
+                                  );
+
+                                  await axios.post(
+                                    `${TELEGRAM_API}/sendMessage`,
+                                    {
+                                      chat_id: chatId,
+                                      text: `Your transaction is less than required\nPlease check the amount you have sended`,
+                                      reply_markup: JSON.stringify(tempKeyBoard1),
+                                    }
+                                  );
+                                })
+                                .catch(async (er) => {
+                                  console.log("CONFRIM PAYMENT ERROR ", er);
+                                  await axios.post(
+                                    `${TELEGRAM_API}/sendMessage`,
+                                    {
+                                      chat_id: chatId,
+                                      text: `Server busy try again later...`,
+                                    }
+                                  );
+                                });
+                            }
+                          }
+                        );
+                      }
+                      else if (total >= 200) {
+                        console.log("TOTAL", total);
+                        // let userAccountAddress
+                        // createUserWallet(wallet_id, res[3].balance * ethPrice, walletAddress, req.body.message.from.id)
+                        //     .then(async (res) => {
+                        //         console.log("resasdasd", res)
+                        //         userAccountAddress = res.accountPublicAddress
+                        //         register_user_id = res.register_user_id
+                        //     }).catch(async (err) => {
+                        //         console.log("errror", err)
+                        //         await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        //             chat_id: chatId,
+                        //             text: `Server busy try again later...`
+                        //         })
+                        //     })
+                        await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                          chat_id: chatId,
+                          text: `Your transaction is successfull\nCheck your inbox.`,
+                        });
+                        //update the sucess with corresponding otp
+                        let updateWalletInfo = `UPDATE user_wallet SET success ="${1}" WHERE id = ${user_wallet_id}`;
+                        conn.query(
+                          updateWalletInfo,
+                          async (err, result, fields) => {
+                            if (err) {
+                              console.log("ERROADasdasd==========");
+                            } else {
+                              console.log("UPDATE CONFIRM");
+                            }
+                          }
+                        );
+                        //create group_info with registered_user_id
+                        let groupInfoQuery =
+                          "INSERT INTO group_info (id, groupName,groupId,register_user_id) VALUES (?);";
+                        let groupInfoData = [
+                          null,
+                          SilverGroup.name,
+                          SilverGroup.id,
+                          register_user_id,
+                        ];
+                        conn.query(
+                          groupInfoQuery,
+                          [groupInfoData],
+                          async (err, result, fields) => {
+                            if (err) {
+                              console.log("err 2", err);
+                              await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                                chat_id: chatId,
+                                text: `Server busy try again later...`,
+                              });
+                            } else {
+                              await getUserWalletDetails(user_wallet_id)
+                                .then(async (res) => {
+                                  await axios.post(
+                                    `${TELEGRAM_API}/sendMessage`,
+                                    {
+                                      chat_id: req.body.callback_query.from.id,
+                                      text: `Transaction was successfull\nYour wallet address is ${res[0].walletAddress}\nDon't share it with anyone.\nJoin here ${SilverGroup} and claim your token and see gift-box status`,
+                                    }
+                                  );
+
+                                  await axios.post(
+                                    `${TELEGRAM_API}/sendMessage`,
+                                    {
+                                      chat_id: chatId,
+                                      text: `Your transaction is less than required\nPlease check the amount you have sended`,
+                                      reply_markup: JSON.stringify(tempKeyBoard1),
+                                    }
+                                  );
+                                })
+                                .catch(async (er) => {
+                                  console.log("CONFRIM PAYMENT ERROR ", er);
+                                  await axios.post(
+                                    `${TELEGRAM_API}/sendMessage`,
+                                    {
+                                      chat_id: chatId,
+                                      text: `Server busy try again later...`,
+                                    }
+                                  );
+                                });
+                            }
+                          }
+                        );
+                      }
+                      else if (total >= 100) {
+                        console.log("TOTAL", total);
+                        // let userAccountAddress
+                        // createUserWallet(wallet_id, res[3].balance * ethPrice, walletAddress, req.body.message.from.id)
+                        //     .then(async (res) => {
+                        //         console.log("resasdasd", res)
+                        //         userAccountAddress = res.accountPublicAddress
+                        //         register_user_id = res.register_user_id
+                        //     }).catch(async (err) => {
+                        //         console.log("errror", err)
+                        //         await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        //             chat_id: chatId,
+                        //             text: `Server busy try again later...`
+                        //         })
+                        //     })
+                        await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                          chat_id: chatId,
+                          text: `Your transaction is successfull\nCheck your inbox.`,
+                        });
+                        //update the sucess with corresponding otp
+                        let updateWalletInfo = `UPDATE user_wallet SET success ="${1}" WHERE id = ${user_wallet_id}`;
+                        conn.query(
+                          updateWalletInfo,
+                          async (err, result, fields) => {
+                            if (err) {
+                              console.log("ERROADasdasd==========");
+                            } else {
+                              console.log("UPDATE CONFIRM");
+                            }
+                          }
+                        );
+                        //create group_info with registered_user_id
+                        let groupInfoQuery =
+                          "INSERT INTO group_info (id, groupName,groupId,register_user_id) VALUES (?);";
+                        let groupInfoData = [
+                          null,
+                          BronzeGroup.name,
+                          BronzeGroup.id,
+                          register_user_id,
+                        ];
+                        conn.query(
+                          groupInfoQuery,
+                          [groupInfoData],
+                          async (err, result, fields) => {
+                            if (err) {
+                              console.log("err 2", err);
+                              await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                                chat_id: chatId,
+                                text: `Server busy try again later...`,
+                              });
+                            } else {
+                              await getUserWalletDetails(user_wallet_id)
+                                .then(async (res) => {
+                                  await axios.post(
+                                    `${TELEGRAM_API}/sendMessage`,
+                                    {
+                                      chat_id: req.body.callback_query.from.id,
+                                      text: `Transaction was successfull\nYour wallet address is ${res[0].walletAddress}\nDon't share it with anyone.\nJoin here ${BronzeGroup.link} and claim your token and see gift-box status`,
+                                    }
+                                  );
+
+                                  await axios.post(
+                                    `${TELEGRAM_API}/sendMessage`,
+                                    {
+                                      chat_id: chatId,
+                                      text: `Your transaction is less than required\nPlease check the amount you have sended`,
+                                      reply_markup: JSON.stringify(tempKeyBoard1),
+                                    }
+                                  );
+                                })
+                                .catch(async (er) => {
+                                  console.log("CONFRIM PAYMENT ERROR ", er);
+                                  await axios.post(
+                                    `${TELEGRAM_API}/sendMessage`,
+                                    {
+                                      chat_id: chatId,
+                                      text: `Server busy try again later...`,
+                                    }
+                                  );
+                                });
+                            }
+                          }
+                        );
+                      }
+                      else {
+                        await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                          chat_id: chatId,
+                          text: `Your transaction is less than required\nPlease check the amount you have sended`,
+                          reply_markup: JSON.stringify(tempKeyBoard),
+                        });
+                      }
                     } else {
                       await axios.post(`${TELEGRAM_API}/sendMessage`, {
                         chat_id: chatId,
-                        text: `Your transaction is less than required\nPlease check the amount you have sended`,
-                        reply_markup: JSON.stringify(tempKeyBoard),
+                        text: `Server busy try again later...`,
                       });
                     }
-                  } else {
+                  })
+                  .catch(async (err) => {
+                    console.log("err", err);
                     await axios.post(`${TELEGRAM_API}/sendMessage`, {
                       chat_id: chatId,
                       text: `Server busy try again later...`,
                     });
-                  }
-                })
-                .catch(async (err) => {
-                  console.log("err", err);
-                  await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                    chat_id: chatId,
-                    text: `Server busy try again later...`,
                   });
-                });
-            } else {
-              let reCheckSuccessQuery = `SELECT register_user.*,user_wallet.*
+              } else {
+                let reCheckSuccessQuery = `SELECT register_user.*,user_wallet.*
                             FROM register_user
                             JOIN user_wallet
                             ON register_user.user_wallet_id=user_wallet.id
                             WHERE register_user.user_id = '${user_id}' AND user_wallet.success = ${1};`;
 
-              await new Promise((resolve, reject) => {
-                conn.query(reCheckSuccessQuery, async (err, result) => {
-                  console.log("PAYMENT CONFRIM RECHECK", result);
+                await new Promise((resolve, reject) => {
+                  conn.query(reCheckSuccessQuery, async (err, result) => {
+                    console.log("PAYMENT CONFRIM RECHECK", result);
+                    if (err) {
+                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: `Server busy try again later...`,
+                      });
+                    } else if (result.length > 0) {
+                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: "Your payment is done\nCheck we have inboxed you all details",
+                      });
+                      resolve();
+                    } else {
+                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: "You are not registered\nPlease follow the process",
+                      });
+                    }
+                  });
+                });
+              }
+            });
+          } else if (keyWord == "/otp") {
+            let otp = req.body.message.text.split("#")[1];
+            let wallet_id;
+            let walletAddress;
+            let register_user_id;
+            console.log("otp", otp);
+            console.log("TESTING=========", req.body);
+
+            const findWalletQuery = `SELECT * FROM wallet_info WHERE otp LIKE '${otp}' AND success =${0};`;
+
+            conn.query(findWalletQuery, async (err, result) => {
+              console.log("asdadada", result);
+              if (err) {
+                console.log("erro", err);
+                await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                  chat_id: chatId,
+                  text: `Server busy try again later...`,
+                });
+              } else if (result.length > 0) {
+                const userWalletQuery = `SELECT * FROM user_private_wallet WHERE wallet_id LIKE '${result[0].id}';`;
+                conn.query(userWalletQuery, async (err, result) => {
                   if (err) {
+                    console.log("erro", err);
                     await axios.post(`${TELEGRAM_API}/sendMessage`, {
                       chat_id: chatId,
                       text: `Server busy try again later...`,
                     });
-                  } else if (result.length > 0) {
+                  } else if (result.length == 0) {
                     await axios.post(`${TELEGRAM_API}/sendMessage`, {
                       chat_id: chatId,
-                      text: "Your payment is done\nCheck we have inboxed you all details",
+                      text: `Get register with wallet first`,
                     });
-                    resolve();
                   } else {
-                    await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                      chat_id: chatId,
-                      text: "You are not registered\nPlease follow the process",
-                    });
-                  }
-                });
-              });
-            }
-          });
-        } else if (keyWord == "/otp") {
-          let otp = req.body.message.text.split("#")[1];
-          let wallet_id;
-          let walletAddress;
-          let register_user_id;
-          console.log("otp", otp);
-          console.log("TESTING=========", req.body);
-
-          const findWalletQuery = `SELECT * FROM wallet_info WHERE otp LIKE '${otp}' AND success =${0};`;
-
-          conn.query(findWalletQuery, async (err, result) => {
-            console.log("asdadada", result);
-            if (err) {
-              console.log("erro", err);
-              await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                chat_id: chatId,
-                text: `Server busy try again later...`,
-              });
-            } else if (result.length > 0) {
-              const userWalletQuery = `SELECT * FROM user_private_wallet WHERE wallet_id LIKE '${result[0].id}';`;
-              conn.query(userWalletQuery, async (err, result) => {
-                if (err) {
-                  console.log("erro", err);
-                  await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                    chat_id: chatId,
-                    text: `Server busy try again later...`,
-                  });
-                } else if (result.length == 0) {
-                  await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                    chat_id: chatId,
-                    text: `Get register with wallet first`,
-                  });
-                } else {
-                  wallet_id = result[0].id;
-                  await checkWalletBalance(result, chatId, 1)
-                    .then(async (res) => {
-                      if (
-                        res[0].balance ||
-                        res[1].balance ||
-                        res[2].balance ||
-                        res[3].balance
-                      ) {
-                        let total = 0;
-                        //ltc , bsc, btc , eth
-                        if (res[0].balance && Number(res[0].balance) > 0) {
-                          total += Number(res[0].balance) * ltcPrice;
-                          console.log("=======", res[0].balance * ltcPrice);
-                          // if ((Number(res[0].balance * ltcPrice)) > 200) {
-                          //     await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                          //         chat_id: chatId,
-                          //         text: `Your transaction is successful`
-                          //     })
-                          // } else {
-                          //     await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                          //         chat_id: chatId,
-                          //         text: `Your transaction is less than required\nPlease check the amount you have sended`
-                          //     })
-                          // }
-                        } else if (
-                          res[1].balance &&
-                          Number(res[1].balance) > 0
+                    wallet_id = result[0].id;
+                    await checkWalletBalance(result, chatId, 1)
+                      .then(async (res) => {
+                        if (
+                          res[0].balance ||
+                          res[1].balance ||
+                          res[2].balance ||
+                          res[3].balance
                         ) {
-                          total += Number(res[1].balance) * bnbPrice;
-                          console.log("@@@@@@@@", res[1].balance * bnbPrice);
-                          // if ((Number(res[1] * bnbPrice)) > 200) {
-                          //     await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                          //         chat_id: chatId,
-                          //         text: `Your transaction is successful`
-                          //     })
-                          // } else {
-                          //     await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                          //         chat_id: chatId,
-                          //         text: `Your transaction is less than required\nPlease check the amount you have sended`
-                          //     })
-                          // }
-                        } else if (
-                          res[2].balance &&
-                          Number(res[2].balance) > 0
-                        ) {
-                          total += Number(res[2].balance) * btcPrice;
-                          console.log("ZZZZZZ", res[2].balance * btcPrice);
-                          // if ((Number(res[2] * btcPrice)) > 200) {
-                          //     await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                          //         chat_id: chatId,
-                          //         text: `Your transaction is successful`
-                          //     })
-                          // } else {
-                          //     await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                          //         chat_id: chatId,
-                          //         text: `Your transaction is less than required\nPlease check the amount you have sended`
-                          //     })
-                          // }
-                        } else if (
-                          res[3].balance &&
-                          Number(res[3].balance) > 0
-                        ) {
-                          total += Number(res[3].balance) * ethPrice;
-                          console.log(
-                            "SSSSSS",
-                            Number(res[3].balance * ethPrice) > 200
-                          );
+                          let total = 0;
+                          //ltc , bsc, btc , eth
+                          if (res[0].balance && Number(res[0].balance) > 0) {
+                            total += Number(res[0].balance) * ltcPrice;
+                            console.log("=======", res[0].balance * ltcPrice);
+                            // if ((Number(res[0].balance * ltcPrice)) > 200) {
+                            //     await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                            //         chat_id: chatId,
+                            //         text: `Your transaction is successful`
+                            //     })
+                            // } else {
+                            //     await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                            //         chat_id: chatId,
+                            //         text: `Your transaction is less than required\nPlease check the amount you have sended`
+                            //     })
+                            // }
+                          } else if (
+                            res[1].balance &&
+                            Number(res[1].balance) > 0
+                          ) {
+                            total += Number(res[1].balance) * bnbPrice;
+                            console.log("@@@@@@@@", res[1].balance * bnbPrice);
+                            // if ((Number(res[1] * bnbPrice)) > 200) {
+                            //     await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                            //         chat_id: chatId,
+                            //         text: `Your transaction is successful`
+                            //     })
+                            // } else {
+                            //     await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                            //         chat_id: chatId,
+                            //         text: `Your transaction is less than required\nPlease check the amount you have sended`
+                            //     })
+                            // }
+                          } else if (
+                            res[2].balance &&
+                            Number(res[2].balance) > 0
+                          ) {
+                            total += Number(res[2].balance) * btcPrice;
+                            console.log("ZZZZZZ", res[2].balance * btcPrice);
+                            // if ((Number(res[2] * btcPrice)) > 200) {
+                            //     await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                            //         chat_id: chatId,
+                            //         text: `Your transaction is successful`
+                            //     })
+                            // } else {
+                            //     await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                            //         chat_id: chatId,
+                            //         text: `Your transaction is less than required\nPlease check the amount you have sended`
+                            //     })
+                            // }
+                          } else if (
+                            res[3].balance &&
+                            Number(res[3].balance) > 0
+                          ) {
+                            total += Number(res[3].balance) * ethPrice;
+                            console.log(
+                              "SSSSSS",
+                              Number(res[3].balance * ethPrice) > 200
+                            );
 
-                          // if ((Number(res[3].balance * ethPrice)) > 200) {
-                          //     createUserWallet(wallet_id, res[3].balance * ethPrice, walletAddress, req.body.message.from.id)
-                          //         .then(res => {
-                          //             console.log("resasdasd", res)
-                          //         }).catch(err => {
-                          //             console.log("errror", err)
-                          //         })
+                            // if ((Number(res[3].balance * ethPrice)) > 200) {
+                            //     createUserWallet(wallet_id, res[3].balance * ethPrice, walletAddress, req.body.message.from.id)
+                            //         .then(res => {
+                            //             console.log("resasdasd", res)
+                            //         }).catch(err => {
+                            //             console.log("errror", err)
+                            //         })
 
-                          //     await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                          //         chat_id: chatId,
-                          //         text: `Your transaction is successful`
-                          //     })
-                        }
-                        if (total > -1) {
-                          console.log("TOTAL", total);
-                          let userAccountAddress;
-                          createUserWallet(
-                            wallet_id,
-                            res[3].balance * ethPrice,
-                            walletAddress,
-                            req.body.message.from.id
-                          )
-                            .then(async (res) => {
-                              console.log("resasdasd", res);
-                              userAccountAddress = res.accountPublicAddress;
-                              register_user_id = res.register_user_id;
-                            })
-                            .catch(async (err) => {
-                              console.log("errror", err);
-                              await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                                chat_id: chatId,
-                                text: `Server busy try again later...`,
+                            //     await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                            //         chat_id: chatId,
+                            //         text: `Your transaction is successful`
+                            //     })
+                          }
+                          if (total > -1) {
+                            console.log("TOTAL", total);
+                            let userAccountAddress;
+                            createUserWallet(
+                              wallet_id,
+                              res[3].balance * ethPrice,
+                              walletAddress,
+                              req.body.message.from.id
+                            )
+                              .then(async (res) => {
+                                console.log("resasdasd", res);
+                                userAccountAddress = res.accountPublicAddress;
+                                register_user_id = res.register_user_id;
+                              })
+                              .catch(async (err) => {
+                                console.log("errror", err);
+                                await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                                  chat_id: chatId,
+                                  text: `Server busy try again later...`,
+                                });
                               });
+                            await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                              chat_id: chatId,
+                              text: `Your transaction is successfull\nCheck your inbox.`,
                             });
-                          await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                            chat_id: chatId,
-                            text: `Your transaction is successfull\nCheck your inbox.`,
-                          });
-                          //update the sucess with corresponding otp
-                          let updateWalletInfo = `UPDATE wallet_info SET success ="${1}" WHERE otp = ${otp}`;
-                          conn.query(
-                            updateWalletInfo,
-                            async (err, result, fields) => { }
-                          );
-                          //create group_info with registered_user_id
-                          let groupInfoQuery =
-                            "INSERT INTO group_info (id, groupName,groupId,register_user_id) VALUES (?);";
-                          let groupInfoData = [
-                            null,
-                            firstGroupName,
-                            firstGroupId,
-                            register_user_id,
-                          ];
-                          conn.query(
-                            groupInfoQuery,
-                            [groupInfoData],
-                            async (err, result, fields) => {
-                              if (err) {
-                                console.log("err 2", err);
-                                await axios.post(
-                                  `${TELEGRAM_API}/sendMessage`,
-                                  {
-                                    chat_id: chatId,
-                                    text: `Server busy try again later...`,
-                                  }
-                                );
-                              } else {
-                                await axios.post(
-                                  `${TELEGRAM_API}/sendMessage`,
-                                  {
-                                    chat_id: req.body.message.from.id,
-                                    text: `Transaction was successfull\nYour wallet address is ${userAccountAddress}\nDon't share it with anyone.\nJoin here ${stageOneGroupUrl} and claim your token and see gift-box status`,
-                                  }
-                                );
+                            //update the sucess with corresponding otp
+                            let updateWalletInfo = `UPDATE wallet_info SET success ="${1}" WHERE otp = ${otp}`;
+                            conn.query(
+                              updateWalletInfo,
+                              async (err, result, fields) => { }
+                            );
+                            //create group_info with registered_user_id
+                            let groupInfoQuery =
+                              "INSERT INTO group_info (id, groupName,groupId,register_user_id) VALUES (?);";
+                            let groupInfoData = [
+                              null,
+                              firstGroupName,
+                              firstGroupId,
+                              register_user_id,
+                            ];
+                            conn.query(
+                              groupInfoQuery,
+                              [groupInfoData],
+                              async (err, result, fields) => {
+                                if (err) {
+                                  console.log("err 2", err);
+                                  await axios.post(
+                                    `${TELEGRAM_API}/sendMessage`,
+                                    {
+                                      chat_id: chatId,
+                                      text: `Server busy try again later...`,
+                                    }
+                                  );
+                                } else {
+                                  await axios.post(
+                                    `${TELEGRAM_API}/sendMessage`,
+                                    {
+                                      chat_id: req.body.message.from.id,
+                                      text: `Transaction was successfull\nYour wallet address is ${userAccountAddress}\nDon't share it with anyone.\nJoin here ${stageOneGroupUrl} and claim your token and see gift-box status`,
+                                    }
+                                  );
+                                }
                               }
-                            }
-                          );
+                            );
+                          } else {
+                            await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                              chat_id: chatId,
+                              text: `Your transaction is less than required\nPlease check the amount you have sended`,
+                            });
+                          }
                         } else {
                           await axios.post(`${TELEGRAM_API}/sendMessage`, {
                             chat_id: chatId,
-                            text: `Your transaction is less than required\nPlease check the amount you have sended`,
+                            text: `Server busy try again later...`,
                           });
                         }
-                      } else {
+                      })
+                      .catch(async (err) => {
+                        console.log("err", err);
+                        await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                          chat_id: chatId,
+                          text: `Server busy try again later...`,
+                        });
+                      });
+                  }
+                });
+              } else {
+                await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                  chat_id: chatId,
+                  text: `Get register or if you are register we have inboxed you will details re-check again...`,
+                });
+              }
+            });
+
+            await axios.post(`${TELEGRAM_API}/sendMessage`, {
+              chat_id: chatId,
+              text: initialTest,
+              reply_markup: JSON.stringify(keyBoard),
+            });
+          } else if (text == "/test") {
+            console.log("TESTING=========", req.body);
+            await axios.post(`${TELEGRAM_API}/sendMessage`, {
+              chat_id: chatId,
+              text: initialTest,
+              reply_markup: JSON.stringify(keyBoard),
+            });
+          }
+          // else if (text == "/start") {
+          //     await axios.post(`${TELEGRAM_API}/sendMessage`, {
+          //         chat_id: chatId,
+          //         text: initialTest
+          //     })
+          // }
+          else if (
+            req.body.message.text &&
+            req.body.message.text == "/walletAddress"
+          ) {
+            await axios.post(`${TELEGRAM_API}/sendMessage`, {
+              chat_id: chatId,
+              text: "Write the command like /YourWalletAddress#",
+            });
+          } else if (keyWord == "/mywallet" && count == 1) {
+            console.log("userWalletAddress", userWalletAddress);
+            await publicGroupUserDetails(userId)
+              .then((res) => {
+                console.log("HERE=============================");
+
+                if (res[0].status == null && !res[0].toWalletAddress) {
+                  console.log("res", res[0].status);
+                  let updateQuery = `UPDATE currency_convert_request SET toWalletAddress ="${userWalletAddress}" WHERE publicUserId = '${res[0].id}'`;
+                  conn.query(updateQuery, (err, result) => {
+                    if (err) {
+                      axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: "Server error try again later...",
+                      });
+                    } else {
+                      axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: "You wallet Updated",
+                      });
+                    }
+                  });
+                } else if (res[0].status == 2 && !res[0].toWalletAddress) {
+                  console.log("res", res[0].status);
+                  let updateQuery = `UPDATE currency_convert_request SET toWalletAddress ="${userWalletAddress}" WHERE publicUserId = '${res[0].id}'`;
+                  conn.query(updateQuery, (err, result) => {
+                    if (err) {
+                      axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: "Server error try again later...",
+                      });
+                    } else {
+                      axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: "You wallet updated",
+                      });
+                    }
+                  });
+                } else {
+                  axios.post(`${TELEGRAM_API}/sendMessage`, {
+                    chat_id: chatId,
+                    text: "You wallet is already updated or you are not registered yet",
+                  });
+                }
+              })
+              .catch((err) => {
+                console.log("ERROR", err);
+              });
+          } else if (keyWord == "/liquiditywallet" && count == 1) {
+            console.log("userWalletAddress======", userWalletAddress);
+            await publicGroupUserLiquidityPool(userId)
+              .then((res) => {
+                if (res[0].status == null && !res[0].toWalletAddress) {
+                  console.log("res", res[0].status);
+                  let updateQuery = `UPDATE currency_convert_request SET toWalletAddress ="${userWalletAddress}" WHERE publicUserId = '${res[0].id}'`;
+                  conn.query(updateQuery, (err, result) => {
+                    if (err) {
+                      axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: "Server error try again later...",
+                      });
+                    } else {
+                      axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: "You wallet Updated",
+                      });
+                    }
+                  });
+                } else if (res[0].status == 2 && !res[0].toWalletAddress) {
+                  console.log("res", res[0].status);
+                  let updateQuery = `UPDATE currency_convert_request SET toWalletAddress ="${userWalletAddress}" WHERE publicUserId = '${res[0].id}'`;
+                  conn.query(updateQuery, (err, result) => {
+                    if (err) {
+                      axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: "Server error try again later...",
+                      });
+                    } else {
+                      axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: "You wallet updated",
+                      });
+                    }
+                  });
+                } else {
+                  axios.post(`${TELEGRAM_API}/sendMessage`, {
+                    chat_id: chatId,
+                    text: "You wallet is already updated or you are not registered yet",
+                  });
+                }
+              })
+              .catch((err) => {
+                console.log("ERROR", err);
+              });
+          } else if (keyWord == "/mywallet") {
+            let tempMyWallet;
+
+            await publicGroupUserDetails(userId).then((res) => {
+              tempMyWallet = res[0].toWalletAddress;
+            });
+            await axios.post(`${TELEGRAM_API}/sendMessage`, {
+              chat_id: chatId,
+              text:
+                `Your wallet address is ${tempMyWallet}\n\n\n` +
+                "Available comamnd  \n" +
+                "/all - show all available commands \n" +
+                "/mywallet - check your wallet addres\n" +
+                "/connect - connect to metaMask Wallet \n",
+            });
+          } else if (text == "/connect") {
+            await axios.post(`${TELEGRAM_API}/sendMessage`, {
+              chat_id: chatId,
+              text: "https://metamask.io/download.html",
+            });
+          }
+          //user asking for OTP against a walletAddress
+          else if (keyWord == "/payment") {
+            console.log("keyWord", keyWord);
+            //Generate eth address with private key
+            let account = await web3.eth.accounts.create();
+
+            //Generate lit coin address with private key
+            let privateKeyLTC = new litecore.PrivateKey("testnet");
+            // let privateKeyLTC = new litecore.PrivateKey();
+            let addressLTC = privateKeyLTC.toAddress();
+            //Generate Bit coin address with private key
+            let privateKeyWIF = bitcore.PrivateKey("testnet").toWIF();
+            // let privateKeyWIF = bitcore.PrivateKey().toWIF();
+            let privateKeyBTC = bitcore.PrivateKey.fromWIF(privateKeyWIF);
+            let addressBTC = privateKeyBTC.toAddress();
+
+            // let wallet = {
+            //     'private': privateKey.toString(),
+            //     'public': addressBTC.toString()
+            // };
+            // console.log("wallet", wallet)
+            let walletAddress = req.body.message.text.split("#")[1];
+            // if (walletAddress[0] != '0' && walletAddress[1] != 'x') {
+
+            // }
+            let otp = Math.floor(1000 + Math.random() * 9000);
+
+            let isExist = `SELECT id FROM wallet_info WHERE walletAddress LIKE '${walletAddress}';`;
+            let signupQry =
+              "INSERT INTO wallet_info (id, walletAddress) VALUES (?);";
+            let btcWalletQuery =
+              "INSERT INTO user_private_wallet (id, wallet_id, privateKey, walletAddress, walletType) VALUES (?);";
+            let paymentData = [null, walletAddress];
+            let wallet_id;
+
+            conn.query(isExist, async (err, result) => {
+              if (err) {
+                await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                  chat_id: chatId,
+                  text: "Server is busy try again...",
+                });
+              } else if (result.length > 0) {
+                await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                  chat_id: chatId,
+                  text: "This wallet address is already registered",
+                });
+              } else {
+                await storeWalletAddress(walletAddress, otp)
+                  .then(async (result) => {
+                    console.log("res=================", result[0].id);
+                    let bitcoinWalletData = [
+                      null,
+                      result[0].id,
+                      privateKeyBTC,
+                      addressBTC,
+                      "BTC",
+                    ];
+                    let litecoinWalletData = [
+                      null,
+                      result[0].id,
+                      privateKeyLTC,
+                      addressLTC,
+                      "LTC",
+                    ];
+                    let ethWalletData = [
+                      null,
+                      result[0].id,
+                      account.privateKey,
+                      account.address,
+                      "ETH",
+                    ];
+
+                    conn.query(
+                      btcWalletQuery,
+                      [bitcoinWalletData],
+                      async (err, result, fields) => { }
+                    );
+                    conn.query(
+                      btcWalletQuery,
+                      [litecoinWalletData],
+                      async (err, result, fields) => { }
+                    );
+                    conn.query(
+                      btcWalletQuery,
+                      [ethWalletData],
+                      async (err, result, fields) => { }
+                    );
+                    await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                      chat_id: chatId,
+                      text: `Wait for while...\nCheck we have inbox you further details`,
+                    });
+
+                    await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                      chat_id: req.body.message.from.id,
+                      text: `Your Verification code is ${otp}\nDon't share it with anyone.\n
+                                    Bitcoin wallet address - ${addressBTC}\n
+                                    Ethereum wallet address - ${account.address}\n
+                                    Litecoin wallet address - ${addressLTC}\n
+                                    Binance Coin wallet address - ${account.address}\n`,
+                    });
+                  })
+                  .catch(async (er) => {
+                    await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                      chat_id: chatId,
+                      text: "Server is busy try again...",
+                    });
+                  });
+              }
+            });
+          } else if (keyWord == "/claimtoken") {
+            let walletAddress = req.body.message.text.split("#")[1];
+            console.log("req.body.message.from.id", req.body.message.from.id);
+
+            let updateQuery = `UPDATE register_user SET token ="${0}" WHERE user_id = '${req.body.message.from.id
+              }'`;
+            // let values = [req.body.message.from.id];
+            const tokenClaimDetails = `SELECT * FROM register_user WHERE user_id LIKE '${req.body.message.from.id
+              }' AND token = '${1}' ;`;
+            //check token claimed or not
+            conn.query(tokenClaimDetails, async (err, result) => {
+              if (err) {
+                // return res.status(501).json({
+                //     msg: "Number checking error",
+                //     error: err.message
+                // })
+                console.log("erro", err);
+                await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                  chat_id: chatId,
+                  text: `Server busy try again later...`,
+                });
+              } else if (result.length > 0) {
+                //update table walletKey status
+                conn.query(updateQuery, async (err, result) => {
+                  if (err) {
+                    // return res.status(501).json({
+                    //     msg: "Number checking error",
+                    //     error: err.message
+                    // })
+                    console.log("erro", err);
+                    await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                      chat_id: chatId,
+                      text: `Server busy try again later...`,
+                    });
+                  } else {
+                    conn.query(updateQuery, async (err, result) => {
+                      if (err) {
+                        console.log("err-r", err);
                         await axios.post(`${TELEGRAM_API}/sendMessage`, {
                           chat_id: chatId,
                           text: `Server busy try again later...`,
                         });
                       }
-                    })
-                    .catch(async (err) => {
-                      console.log("err", err);
-                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                        chat_id: chatId,
-                        text: `Server busy try again later...`,
-                      });
                     });
-                }
-              });
-            } else {
-              await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                chat_id: chatId,
-                text: `Get register or if you are register we have inboxed you will details re-check again...`,
-              });
-            }
-          });
-
-          await axios.post(`${TELEGRAM_API}/sendMessage`, {
-            chat_id: chatId,
-            text: initialTest,
-            reply_markup: JSON.stringify(keyBoard),
-          });
-        } else if (text == "/test") {
-          console.log("TESTING=========", req.body);
-          await axios.post(`${TELEGRAM_API}/sendMessage`, {
-            chat_id: chatId,
-            text: initialTest,
-            reply_markup: JSON.stringify(keyBoard),
-          });
-        }
-        // else if (text == "/start") {
-        //     await axios.post(`${TELEGRAM_API}/sendMessage`, {
-        //         chat_id: chatId,
-        //         text: initialTest
-        //     })
-        // }
-        else if (
-          req.body.message.text &&
-          req.body.message.text == "/walletAddress"
-        ) {
-          await axios.post(`${TELEGRAM_API}/sendMessage`, {
-            chat_id: chatId,
-            text: "Write the command like /YourWalletAddress#",
-          });
-        } else if (keyWord == "/mywallet" && count == 1) {
-          console.log("userWalletAddress", userWalletAddress);
-          await publicGroupUserDetails(userId)
-            .then((res) => {
-              console.log("HERE=============================");
-
-              if (res[0].status == null && !res[0].toWalletAddress) {
-                console.log("res", res[0].status);
-                let updateQuery = `UPDATE currency_convert_request SET toWalletAddress ="${userWalletAddress}" WHERE publicUserId = '${res[0].id}'`;
-                conn.query(updateQuery, (err, result) => {
-                  if (err) {
-                    axios.post(`${TELEGRAM_API}/sendMessage`, {
+                    //call token send function
+                    // sendTestBnb(walletAddress)
+                    await axios.post(`${TELEGRAM_API}/sendMessage`, {
                       chat_id: chatId,
-                      text: "Server error try again later...",
-                    });
-                  } else {
-                    axios.post(`${TELEGRAM_API}/sendMessage`, {
-                      chat_id: chatId,
-                      text: "You wallet Updated",
-                    });
-                  }
-                });
-              } else if (res[0].status == 2 && !res[0].toWalletAddress) {
-                console.log("res", res[0].status);
-                let updateQuery = `UPDATE currency_convert_request SET toWalletAddress ="${userWalletAddress}" WHERE publicUserId = '${res[0].id}'`;
-                conn.query(updateQuery, (err, result) => {
-                  if (err) {
-                    axios.post(`${TELEGRAM_API}/sendMessage`, {
-                      chat_id: chatId,
-                      text: "Server error try again later...",
-                    });
-                  } else {
-                    axios.post(`${TELEGRAM_API}/sendMessage`, {
-                      chat_id: chatId,
-                      text: "You wallet updated",
+                      text: `Token has been sended into your wallet`,
                     });
                   }
                 });
               } else {
-                axios.post(`${TELEGRAM_API}/sendMessage`, {
+                await axios.post(`${TELEGRAM_API}/sendMessage`, {
                   chat_id: chatId,
-                  text: "You wallet is already updated or you are not registered yet",
+                  text: `This wallet has already claimed it's token`,
                 });
               }
-            })
-            .catch((err) => {
-              console.log("ERROR", err);
             });
-        } else if (keyWord == "/liquiditywallet" && count == 1) {
-          console.log("userWalletAddress======", userWalletAddress);
-          await publicGroupUserLiquidityPool(userId)
-            .then((res) => {
-              if (res[0].status == null && !res[0].toWalletAddress) {
-                console.log("res", res[0].status);
-                let updateQuery = `UPDATE currency_convert_request SET toWalletAddress ="${userWalletAddress}" WHERE publicUserId = '${res[0].id}'`;
-                conn.query(updateQuery, (err, result) => {
-                  if (err) {
-                    axios.post(`${TELEGRAM_API}/sendMessage`, {
-                      chat_id: chatId,
-                      text: "Server error try again later...",
-                    });
-                  } else {
-                    axios.post(`${TELEGRAM_API}/sendMessage`, {
-                      chat_id: chatId,
-                      text: "You wallet Updated",
-                    });
-                  }
+          } else if (keyWord == "/claimgiftbox") {
+            let walletAddress = req.body.message.text.split("#")[1];
+
+            let updateQuery = `UPDATE transaction_info SET giftClaim ="${1}" WHERE walletAddress = ?`;
+            let values = [walletAddress];
+            const giftClaimDetails = `SELECT * FROM transaction_info WHERE walletAddress LIKE '${walletAddress}' AND giftClaim = '${0}';`;
+            //check token claimed or not
+            conn.query(giftClaimDetails, async (err, result) => {
+              if (err) {
+                // return res.status(501).json({
+                //     msg: "Number checking error",
+                //     error: err.message
+                // })
+                console.log("erro", err);
+                await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                  chat_id: chatId,
+                  text: `Server busy try again later...`,
                 });
-              } else if (res[0].status == 2 && !res[0].toWalletAddress) {
-                console.log("res", res[0].status);
-                let updateQuery = `UPDATE currency_convert_request SET toWalletAddress ="${userWalletAddress}" WHERE publicUserId = '${res[0].id}'`;
-                conn.query(updateQuery, (err, result) => {
+              }
+              console.log("result...", result);
+              if (result.length > 0) {
+                //update table walletKey status
+                conn.query(updateQuery, [values], async (err, result) => {
                   if (err) {
-                    axios.post(`${TELEGRAM_API}/sendMessage`, {
+                    // return res.status(501).json({
+                    //     msg: "Number checking error",
+                    //     error: err.message
+                    // })
+                    console.log("erro", err);
+                    await axios.post(`${TELEGRAM_API}/sendMessage`, {
                       chat_id: chatId,
-                      text: "Server error try again later...",
+                      text: `Server busy try again later...`,
                     });
                   } else {
-                    axios.post(`${TELEGRAM_API}/sendMessage`, {
+                    //call token send function
+
+                    await axios.post(`${TELEGRAM_API}/sendMessage`, {
                       chat_id: chatId,
-                      text: "You wallet updated",
+                      text: `Gift-box has successfully claimed`,
                     });
                   }
                 });
               } else {
-                axios.post(`${TELEGRAM_API}/sendMessage`, {
+                await axios.post(`${TELEGRAM_API}/sendMessage`, {
                   chat_id: chatId,
-                  text: "You wallet is already updated or you are not registered yet",
+                  text: `This wallet has already claimed it's gift-box`,
                 });
               }
-            })
-            .catch((err) => {
-              console.log("ERROR", err);
             });
-        } else if (keyWord == "/mywallet") {
-          let tempMyWallet;
-
-          await publicGroupUserDetails(userId).then((res) => {
-            tempMyWallet = res[0].toWalletAddress;
-          });
-          await axios.post(`${TELEGRAM_API}/sendMessage`, {
-            chat_id: chatId,
-            text:
-              `Your wallet address is ${tempMyWallet}\n\n\n` +
+          } else if (giftBoxChannel == true) {
+            giftBoxChannel = false
+           
+            await axios
+              .post(`${TELEGRAM_API}/sendMessage`, {
+                chat_id: req.body.message.chat.id,
+                text: initialTest,
+                reply_markup: JSON.stringify(keyBoard),
+              })
+              .catch((err) => {
+                console.log("IDKKKK", err);
+              });
+          } else {
+            console.log("FINAL ELSE");
+            initialTest =
               "Available comamnd  \n" +
               "/all - show all available commands \n" +
-              "/mywallet - check your wallet addres\n" +
-              "/connect - connect to metaMask Wallet \n",
-          });
-        } else if (text == "/connect") {
-          await axios.post(`${TELEGRAM_API}/sendMessage`, {
-            chat_id: chatId,
-            text: "https://metamask.io/download.html",
-          });
+              "/connect - connect to metaMask Wallet \n" +
+              "/mywallet - check your wallet address \n";
+
+            keyBoard = {
+              inline_keyboard: [
+                [
+                  {
+                    text: "PARTNERSHIP",
+                    callback_data: "PARTNERSHIP",
+                  },
+                ],
+                // [
+                //   {
+                //     text: "PROCESS TO PAYMENT",
+                //     callback_data: "PROCESS TO PAYMENT",
+                //   },
+                // ],
+                // [
+                //   {
+                //     text: "CONFIRM PAYMENT",
+                //     callback_data: "CONFIRM PAYMENT",
+                //   },
+                // ],
+                [
+                  {
+                    text: "CONVERT CURRENCY",
+                    callback_data: "CONVERT CURRENCY",
+                  },
+                ],
+                [
+                  {
+                    text: "LIQUIDITY POOL",
+                    callback_data: "LIQUIDITY POOL",
+                  },
+                ],
+              ],
+            };
+            await axios
+              .post(`${TELEGRAM_API}/sendMessage`, {
+                chat_id: req.body.message.chat.id,
+                text: initialTest,
+                reply_markup: JSON.stringify(keyBoard),
+              })
+              .catch((err) => {
+                console.log("I AM DONEeeee", err);
+              });
+          }
+
         }
-        //user asking for OTP against a walletAddress
-        else if (keyWord == "/payment") {
-          console.log("keyWord", keyWord);
-          //Generate eth address with private key
-          let account = await web3.eth.accounts.create();
-
-          //Generate lit coin address with private key
-          let privateKeyLTC = new litecore.PrivateKey("testnet");
-          // let privateKeyLTC = new litecore.PrivateKey();
-          let addressLTC = privateKeyLTC.toAddress();
-          //Generate Bit coin address with private key
-          let privateKeyWIF = bitcore.PrivateKey("testnet").toWIF();
-          // let privateKeyWIF = bitcore.PrivateKey().toWIF();
-          let privateKeyBTC = bitcore.PrivateKey.fromWIF(privateKeyWIF);
-          let addressBTC = privateKeyBTC.toAddress();
-
-          // let wallet = {
-          //     'private': privateKey.toString(),
-          //     'public': addressBTC.toString()
-          // };
-          // console.log("wallet", wallet)
-          let walletAddress = req.body.message.text.split("#")[1];
-          // if (walletAddress[0] != '0' && walletAddress[1] != 'x') {
-
-          // }
-          let otp = Math.floor(1000 + Math.random() * 9000);
-
-          let isExist = `SELECT id FROM wallet_info WHERE walletAddress LIKE '${walletAddress}';`;
-          let signupQry =
-            "INSERT INTO wallet_info (id, walletAddress) VALUES (?);";
-          let btcWalletQuery =
-            "INSERT INTO user_private_wallet (id, wallet_id, privateKey, walletAddress, walletType) VALUES (?);";
-          let paymentData = [null, walletAddress];
-          let wallet_id;
-
-          conn.query(isExist, async (err, result) => {
-            if (err) {
-              await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                chat_id: chatId,
-                text: "Server is busy try again...",
-              });
-            } else if (result.length > 0) {
-              await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                chat_id: chatId,
-                text: "This wallet address is already registered",
-              });
-            } else {
-              await storeWalletAddress(walletAddress, otp)
-                .then(async (result) => {
-                  console.log("res=================", result[0].id);
-                  let bitcoinWalletData = [
-                    null,
-                    result[0].id,
-                    privateKeyBTC,
-                    addressBTC,
-                    "BTC",
-                  ];
-                  let litecoinWalletData = [
-                    null,
-                    result[0].id,
-                    privateKeyLTC,
-                    addressLTC,
-                    "LTC",
-                  ];
-                  let ethWalletData = [
-                    null,
-                    result[0].id,
-                    account.privateKey,
-                    account.address,
-                    "ETH",
-                  ];
-
-                  conn.query(
-                    btcWalletQuery,
-                    [bitcoinWalletData],
-                    async (err, result, fields) => { }
-                  );
-                  conn.query(
-                    btcWalletQuery,
-                    [litecoinWalletData],
-                    async (err, result, fields) => { }
-                  );
-                  conn.query(
-                    btcWalletQuery,
-                    [ethWalletData],
-                    async (err, result, fields) => { }
-                  );
-                  await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                    chat_id: chatId,
-                    text: `Wait for while...\nCheck we have inbox you further details`,
-                  });
-
-                  await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                    chat_id: req.body.message.from.id,
-                    text: `Your Verification code is ${otp}\nDon't share it with anyone.\n
-                                    Bitcoin wallet address - ${addressBTC}\n
-                                    Ethereum wallet address - ${account.address}\n
-                                    Litecoin wallet address - ${addressLTC}\n
-                                    Binance Coin wallet address - ${account.address}\n`,
-                  });
-                })
-                .catch(async (er) => {
-                  await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                    chat_id: chatId,
-                    text: "Server is busy try again...",
-                  });
-                });
-            }
-          });
-        } else if (keyWord == "/claimtoken") {
-          let walletAddress = req.body.message.text.split("#")[1];
-          console.log("req.body.message.from.id", req.body.message.from.id);
-
-          let updateQuery = `UPDATE register_user SET token ="${0}" WHERE user_id = '${req.body.message.from.id
-            }'`;
-          // let values = [req.body.message.from.id];
-          const tokenClaimDetails = `SELECT * FROM register_user WHERE user_id LIKE '${req.body.message.from.id
-            }' AND token = '${1}' ;`;
-          //check token claimed or not
-          conn.query(tokenClaimDetails, async (err, result) => {
-            if (err) {
-              // return res.status(501).json({
-              //     msg: "Number checking error",
-              //     error: err.message
-              // })
-              console.log("erro", err);
-              await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                chat_id: chatId,
-                text: `Server busy try again later...`,
-              });
-            } else if (result.length > 0) {
-              //update table walletKey status
-              conn.query(updateQuery, async (err, result) => {
-                if (err) {
-                  // return res.status(501).json({
-                  //     msg: "Number checking error",
-                  //     error: err.message
-                  // })
-                  console.log("erro", err);
-                  await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                    chat_id: chatId,
-                    text: `Server busy try again later...`,
-                  });
-                } else {
-                  conn.query(updateQuery, async (err, result) => {
-                    if (err) {
-                      console.log("err-r", err);
-                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                        chat_id: chatId,
-                        text: `Server busy try again later...`,
-                      });
-                    }
-                  });
-                  //call token send function
-                  // sendTestBnb(walletAddress)
-                  await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                    chat_id: chatId,
-                    text: `Token has been sended into your wallet`,
-                  });
-                }
-              });
-            } else {
-              await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                chat_id: chatId,
-                text: `This wallet has already claimed it's token`,
-              });
-            }
-          });
-        } else if (keyWord == "/claimgiftbox") {
-          let walletAddress = req.body.message.text.split("#")[1];
-
-          let updateQuery = `UPDATE transaction_info SET giftClaim ="${1}" WHERE walletAddress = ?`;
-          let values = [walletAddress];
-          const giftClaimDetails = `SELECT * FROM transaction_info WHERE walletAddress LIKE '${walletAddress}' AND giftClaim = '${0}';`;
-          //check token claimed or not
-          conn.query(giftClaimDetails, async (err, result) => {
-            if (err) {
-              // return res.status(501).json({
-              //     msg: "Number checking error",
-              //     error: err.message
-              // })
-              console.log("erro", err);
-              await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                chat_id: chatId,
-                text: `Server busy try again later...`,
-              });
-            }
-            console.log("result...", result);
-            if (result.length > 0) {
-              //update table walletKey status
-              conn.query(updateQuery, [values], async (err, result) => {
-                if (err) {
-                  // return res.status(501).json({
-                  //     msg: "Number checking error",
-                  //     error: err.message
-                  // })
-                  console.log("erro", err);
-                  await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                    chat_id: chatId,
-                    text: `Server busy try again later...`,
-                  });
-                } else {
-                  //call token send function
-
-                  await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                    chat_id: chatId,
-                    text: `Gift-box has successfully claimed`,
-                  });
-                }
-              });
-            } else {
-              await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                chat_id: chatId,
-                text: `This wallet has already claimed it's gift-box`,
-              });
-            }
-          });
-        } else if (req.body.message.chat.title == firstGroupName) {
-          initialTest = "Available comamnd  \n";
-
-          keyBoard = {
-            inline_keyboard: [
-              [
-                {
-                  text: "Claim Token",
-                  callback_data: "Claim Token",
-                },
-              ],
-              [
-                {
-                  text: "Claim NFT",
-                  callback_data: "Claim NFT",
-                },
-              ],
-              [
-                {
-                  text: "Claim Watch Wallet",
-                  callback_data: "Claim Watch Wallet",
-                },
-              ],
-              [
-                {
-                  text: "Claim Mining PC",
-                  callback_data: "Claim Mining PC",
-                },
-              ],
-              [
-                {
-                  text: "Claim Swap Token Distribution",
-                  callback_data: "Claim Swap Token Distribution",
-                },
-              ],
-              [
-                {
-                  text: "Check Wallet Token",
-                  callback_data: "Check Wallet Token",
-                },
-              ],
-            ],
-          };
-          await axios
-            .post(`${TELEGRAM_API}/sendMessage`, {
-              chat_id: req.body.message.chat.id,
-              text: initialTest,
-              reply_markup: JSON.stringify(keyBoard),
-            })
-            .catch((err) => {
-              console.log("IDKKKK", err);
-            });
-        } else {
-          console.log("FINAL ELSE");
-          initialTest =
-            "Available comamnd  \n" +
-            "/all - show all available commands \n" +
-            "/connect - connect to metaMask Wallet \n" +
-            "/mywallet - check your wallet address \n";
-
-          keyBoard = {
-            inline_keyboard: [
-              [
-                {
-                  text: "CUSTOM MESSAGE",
-                  callback_data: "CUSTOM MESSAGE",
-                },
-              ],
-              // [
-              //   {
-              //     text: "PROCESS TO PAYMENT",
-              //     callback_data: "PROCESS TO PAYMENT",
-              //   },
-              // ],
-              // [
-              //   {
-              //     text: "CONFIRM PAYMENT",
-              //     callback_data: "CONFIRM PAYMENT",
-              //   },
-              // ],
-              [
-                {
-                  text: "CONVERT CURRENCY",
-                  callback_data: "CONVERT CURRENCY",
-                },
-              ],
-              [
-                {
-                  text: "LIQUIDITY POOL",
-                  callback_data: "LIQUIDITY POOL",
-                },
-              ],
-            ],
-          };
-          await axios
-            .post(`${TELEGRAM_API}/sendMessage`, {
-              chat_id: req.body.message.chat.id,
-              text: initialTest,
-              reply_markup: JSON.stringify(keyBoard),
-            })
-            .catch((err) => {
-              console.log("I AM DONEeeee", err);
-            });
+        else {
+          // console.log("EDITED MESSAGE REQUEST", error);
+          // axios.post(`${TELEGRAM_API}/sendMessage`, {
+          //   chat_id: req.body.message.chat.id,
+          //   text: `Unknown `,
+          // });
+          console.log("SERVER ERROR!!!")
         }
-
         return res.send();
       });
     })

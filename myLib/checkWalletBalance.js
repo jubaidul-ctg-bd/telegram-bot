@@ -13,7 +13,7 @@ async function checkWalletBalance(user_wallet_id, testnet) {
             }
         })
     })
-    console.log("walletAddress", walletAddress)
+    console.log("walletAddress==========", walletAddress)
     let TransDetails
     let TokenPrice
     if (testnet == 1) {
@@ -32,10 +32,10 @@ async function checkWalletBalance(user_wallet_id, testnet) {
                 //     }).catch(er=>{
                 //         console.log("MAIN ERROR====111")
                 //     })
-                console.log("res.data.confirmed_balance", res.data.confirmed_balance)
+                console.log("res.data.confirmed_balance", res.data.data.confirmed_balance)
                 let balance = {
                     // balance: (res.data.final_balance) * 0.00000001,
-                    balance: res.data.confirmed_balance
+                    balance: res.data.data.confirmed_balance
                 }
                 console.log("hhhhhhhhhhhhhhhhhhhh", res.data, walletAddress[1], balance)
                 return balance
