@@ -2718,14 +2718,14 @@ const init = async () => {
           ) {
             console.log("I AM HERE");
             chat_id = req.body.message.chat.id;
-            text = `Welcome ${req.body.message.new_chat_member.first_name} \n
-            AGAME PARTNER \n  
-            Contributions \n
-            100 \n
-            200 \n
-            500 \n
-            1000 \n
-            2000 `;
+            text = `Welcome ${req.body.message.new_chat_member.first_name}`  +  '\n' +
+            "AGAME PARTNER" + '\n' +
+            "Contributions" + '\n' +
+            "100" + '\n' +
+            "200" + '\n' +
+            "500" + '\n' +
+            "1000" + '\n'+
+            "2000" 
             // await axios.post(`${TELEGRAM_API}/sendMessage`, {
             //     chat_id: req.body.callback_query.message.chat.id,
             //     text: 'Welcome New Member'
@@ -2737,7 +2737,9 @@ const init = async () => {
             req.body.message &&
             req.body.message.left_chat_member
           ) {
-            console.log("SOMEONE LEFT");
+            console.log("I AM HERE");
+            chat_id = req.body.message.chat.id;
+            text = `User left the group`
           } 
           //platinum group 
           else if (
