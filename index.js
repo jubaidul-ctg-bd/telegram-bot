@@ -2065,7 +2065,7 @@ testAPI()
 
 async function sendXGXToken(walletAddress,amount) {
   let customOutput = null
-   return await axios
+   await axios
     .post(`https://payraseaport.com/api/send_token`, {
       tokenamount: String(amount),
       toAddress: walletAddress,
@@ -2075,10 +2075,8 @@ async function sendXGXToken(walletAddress,amount) {
     })
     .then(async (res) => {
       if (res.data.error == false) {
-        console.log("XGXTRX", res.data.data.txId);
-        customOutput.XGXTRX = res.data.data.txId
+        customOutput = res.data.data.txId
       }
-      customOutput = res.data.data.txId
       return customOutput
     })
     .catch((er) => {
@@ -2086,6 +2084,7 @@ async function sendXGXToken(walletAddress,amount) {
       return customOutput
     });
 
+  return customOutput
 }
 
 async function sendXGXTokenForNFT(walletAddress, amount, userPrivateKey) {
@@ -2603,6 +2602,19 @@ const init = async () => {
         }
         else if (req.body.message || req.body.callback_query) {
           let chatId;
+          let backToHomeText = 
+          "Available comamnd  \n" +
+          "/all - show all available commands \n" 
+          let backToHomeButton = {
+            inline_keyboard: [
+              [
+                {
+                  text: "MAIN MENU",
+                  callback_data: "MAIN MENU",
+                },
+              ],
+            ],
+          };
           let initialTest;
           let equivalentFlag = false;
           let btcToLtcFlag = false;
@@ -2633,11 +2645,11 @@ const init = async () => {
           let secret_groupId = -695063140;
           let currentGroupId
 
-          let PlatinumGroup = { id: '-615491856', name: 'XGX-Platinum', link: 'https://t.me/+vBlsqUqsOIsxYTI1' }
-          let GoldGroup = { id: '-463538098', name: 'XGX-Gold', link: 'https://t.me/+UDww4gKWPL5jOTA1' }
-          let TitaniumGroup = { id: null, name: 'XGX-Titanium', link: null }
-          let SilverGroup = { id: '-621196087', name: 'XGX-Silver', link: 'https://t.me/+gKTNXsgUTPgyN2I9' }
-          let BronzeGroup = { id: '-743828752', name: 'XGX-Bronze', link: 'https://t.me/+hjBiqKTIcaViN2Y1' }
+          let PlatinumGroup = { id: '-615491856', name: 'AGAME-Platinum', link: 'https://t.me/+vBlsqUqsOIsxYTI1' }
+          let GoldGroup = { id: '-463538098', name: 'AGAME-Gold', link: 'https://t.me/+UDww4gKWPL5jOTA1' }
+          let TitaniumGroup = { id: '-735694025', name: 'AGAME-TITANIUM', link: 'https://t.me/+D5NSORIDkbhmOTk1' }
+          let SilverGroup = { id: '-621196087', name: 'AGAME-Silver', link: 'https://t.me/+gKTNXsgUTPgyN2I9' }
+          let BronzeGroup = { id: '-743828752', name: 'AGAME-Bronze', link: 'https://t.me/+hjBiqKTIcaViN2Y1' }
 
 
           // if(req.body.callback_query){
@@ -5021,8 +5033,9 @@ const init = async () => {
                     });
                     //call token send function
                     // sendTestBnb(walletAddress)
-                    await sendXGXToken(walletAddress, 500)
+                    await sendXGXToken(walletAddress, 10)
                       .then(async (res) => {
+                        console.log("I AM HERE================", res)
                         if (res) {
                           await axios.post(`${TELEGRAM_API}/sendMessage`, {
                             chat_id: chatId,
@@ -5419,7 +5432,7 @@ const init = async () => {
                 ],
               ],
             };
-
+            let previousBalance 
             let user_id = req.body.callback_query.from.id;
             let user_wallet_id;
             let wallet_id;
@@ -5578,7 +5591,7 @@ const init = async () => {
                                     `${TELEGRAM_API}/sendMessage`,
                                     {
                                       chat_id: chatId,
-                                      text: `Your transaction is less than required\nPlease check the amount you have sended`,
+                                      text: backToHomeText,
                                       reply_markup: JSON.stringify(tempKeyBoard1),
                                     }
                                   );
@@ -5662,7 +5675,7 @@ const init = async () => {
                                     `${TELEGRAM_API}/sendMessage`,
                                     {
                                       chat_id: chatId,
-                                      text: `Your transaction is less than required\nPlease check the amount you have sended`,
+                                      text: backToHomeText,
                                       reply_markup: JSON.stringify(tempKeyBoard1),
                                     }
                                   );
@@ -5746,7 +5759,7 @@ const init = async () => {
                                     `${TELEGRAM_API}/sendMessage`,
                                     {
                                       chat_id: chatId,
-                                      text: `Your transaction is less than required\nPlease check the amount you have sended`,
+                                      text: backToHomeText,
                                       reply_markup: JSON.stringify(tempKeyBoard1),
                                     }
                                   );
@@ -5822,7 +5835,7 @@ const init = async () => {
                                     `${TELEGRAM_API}/sendMessage`,
                                     {
                                       chat_id: req.body.callback_query.from.id,
-                                      text: `Transaction was successfull\nYour wallet address is ${res[0].walletAddress}\nDon't share it with anyone.\nJoin here ${SilverGroup} and claim your token and see gift-box status`,
+                                      text: `Transaction was successfull\nYour wallet address is ${res[0].walletAddress}\nDon't share it with anyone.\nJoin here ${SilverGroup.link} and claim your token and see gift-box status`,
                                     }
                                   );
 
@@ -5830,7 +5843,7 @@ const init = async () => {
                                     `${TELEGRAM_API}/sendMessage`,
                                     {
                                       chat_id: chatId,
-                                      text: `Your transaction is less than required\nPlease check the amount you have sended`,
+                                      text: backToHomeText,
                                       reply_markup: JSON.stringify(tempKeyBoard1),
                                     }
                                   );
@@ -5914,7 +5927,7 @@ const init = async () => {
                                     `${TELEGRAM_API}/sendMessage`,
                                     {
                                       chat_id: chatId,
-                                      text: `Your transaction is less than required\nPlease check the amount you have sended`,
+                                      text: backToHomeText,
                                       reply_markup: JSON.stringify(tempKeyBoard1),
                                     }
                                   );
@@ -5934,6 +5947,9 @@ const init = async () => {
                         );
                       }
                       else {
+
+                        console.log(" I AM HERE PLEASE RECHECK",total)
+
                         await axios.post(`${TELEGRAM_API}/sendMessage`, {
                           chat_id: chatId,
                           text: `Your transaction is less than required\nPlease check the amount you have sended`,
