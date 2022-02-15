@@ -3406,6 +3406,7 @@ const init = async () => {
             req.body.callback_query.message.chat.title == publicGroup &&
             req.body.callback_query.data == "LEVEL2"
           ) {
+            console.log("HERE")
             btcToLtcFlag = true;
             chatId = req.body.callback_query.message.chat.id;
             // let privateKeyWIF = bitcore.PrivateKey("testnet").toWIF();
@@ -3439,6 +3440,7 @@ const init = async () => {
 
             await create_public_user(req.body.callback_query.from.id).then(
               (res) => {
+                console.log("I AM HERE", res);
                 if (res) {
                   console.log("result==================", res);
 
@@ -6317,7 +6319,11 @@ const init = async () => {
             let tempMyWallet;
 
             await publicGroupUserDetails(userId).then((res) => {
-              tempMyWallet = res[0].toWalletAddress;
+
+              console.log(" PUBLIC WALLET CHECK", res)
+              if(res.length > 0){
+                tempMyWallet = res[0].toWalletAddress;
+              }
             });
             await axios.post(`${TELEGRAM_API}/sendMessage`, {
               chat_id: chatId,
