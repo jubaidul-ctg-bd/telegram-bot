@@ -2718,7 +2718,14 @@ const init = async () => {
           ) {
             console.log("I AM HERE");
             chat_id = req.body.message.chat.id;
-            text = "New user has entered to the group";
+            text = `Welcome ${req.body.message.new_chat_member.first_name} \n
+            AGAME PARTNER \n  
+            Contributions \n
+            100 \n
+            200 \n
+            500 \n
+            1000 \n
+            2000 `;
             // await axios.post(`${TELEGRAM_API}/sendMessage`, {
             //     chat_id: req.body.callback_query.message.chat.id,
             //     text: 'Welcome New Member'
@@ -3149,8 +3156,8 @@ const init = async () => {
               inline_keyboard: [
                 [
                   {
-                    text: "PARTNERSHIP",
-                    callback_data: "PARTNERSHIP",
+                    text: "AGAME-PARTNER",
+                    callback_data: "AGAME-PARTNER",
                   },
                 ],
                 [
@@ -3380,8 +3387,8 @@ const init = async () => {
                     inline_keyboard: [
                       [
                         {
-                          text: "PARTNERSHIP",
-                          callback_data: "PARTNERSHIP",
+                          text: "AGAME-PARTNER",
+                          callback_data: "AGAME-PARTNER",
                         },
                       ],
                       [
@@ -4406,10 +4413,10 @@ const init = async () => {
           else if (
             req.body.callback_query &&
             req.body.callback_query.message.chat.title == publicGroup &&
-            req.body.callback_query.data == "PARTNERSHIP"
+            req.body.callback_query.data == "AGAME-PARTNER"
           ) {
             customMsgFlag = true;
-            console.log("PARTNERSHIP", req.body.callback_query);
+            console.log("AGAME-PARTNER", req.body.callback_query);
             // chatId = req.body.callback_query.from.id
             chatId = req.body.callback_query.message.chat.id;
             text = req.body.callback_query.data;
@@ -6597,8 +6604,8 @@ const init = async () => {
               inline_keyboard: [
                 [
                   {
-                    text: "PARTNERSHIP",
-                    callback_data: "PARTNERSHIP",
+                    text: "AGAME-PARTNER",
+                    callback_data: "AGAME-PARTNER",
                   },
                 ],
                 // [
