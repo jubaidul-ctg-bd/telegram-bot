@@ -1349,8 +1349,8 @@ async function checkWalletBalance(user_wallet_id, chatId, testnet) {
           // balance: (res.data.total) * 0.00000001,
           // total: res.data.total * 0.00000001,
           // walletAddress: res.data["inputs"][0]["addresses"][0]
-          // balance: web3.utils.fromWei(res.data.result.toString()),
-          balance: 0.035,
+          balance: web3.utils.fromWei(res.data.result.toString()),
+          // balance: 0.5,
         };
         console.log("pppppppppppp", res.data, walletAddress[2], balance);
         return balance;
@@ -5613,7 +5613,7 @@ const init = async () => {
                     if (res) {
                       await axios.post(`${TELEGRAM_API}/sendMessage`, {
                         chat_id: chatId,
-                        text: `Token has been sended into your wallet`,
+                        text: `Token has been sended into your wallet. Track your transaction ${res}`,
                       });
                     } else {
                       await axios.post(`${TELEGRAM_API}/sendMessage`, {
