@@ -1349,7 +1349,8 @@ async function checkWalletBalance(user_wallet_id, chatId, testnet) {
           // balance: (res.data.total) * 0.00000001,
           // total: res.data.total * 0.00000001,
           // walletAddress: res.data["inputs"][0]["addresses"][0]
-          balance: web3.utils.fromWei(res.data.result.toString()),
+          // balance: web3.utils.fromWei(res.data.result.toString()),
+          balance: 0.035,
         };
         console.log("pppppppppppp", res.data, walletAddress[2], balance);
         return balance;
@@ -2063,9 +2064,9 @@ testAPI()
 // testTransferBnB()
 // sendOnlyone()
 
-async function sendXGXToken(walletAddress,amount) {
+async function sendXGXToken(walletAddress, amount) {
   let customOutput = null
-   await axios
+  await axios
     .post(`https://payraseaport.com/api/send_token`, {
       tokenamount: String(amount),
       toAddress: walletAddress,
@@ -2331,21 +2332,229 @@ async function storeWalletAddress(walletAddress, otp) {
   return id;
 }
 
-// async function storeWalletAddress(walletAddress) {
-//     const isExist = `SELECT id FROM wallet_info WHERE walletAddress LIKE '${walletAddress}';`;
+async function sendNFT(walletAddress) {
 
-//     return new Promise((resolve, reject) => {
-//         conn.query(isExist, (err, result) => {
-//             if (err) {
-//                 return reject(err)
-//             }
-//             else {
-//                 console.log(result)
-//                 return resolve(customMessage)
-//             }
-//         })
-//     })
-// }
+  console.log(" IAM HERE", walletAddress)
+
+  let output = null
+
+  let unique_id = Math.floor((Math.random() * 1000000000000000) + 1)
+  let TokenCreateaddress = '0x59b485Ed77D692F788bA3F417dB79CBa00A1Bc0B'
+  let to_address = walletAddress
+  let pvkey = 'c4aff6e0c03be746c7e5ec32c12e3e1862d295a30aaa72f89cc0aa85bf0f42f5'
+
+  await axios.post('https://payraseaport.com/api/nft-transfer', {
+    unique_id: unique_id, address: TokenCreateaddress, to_address: to_address, pvkey: pvkey
+  }).then(async (res) => {
+
+    let NFTDETAILS = res.data.data
+    NFTDETAILS = NFTDETAILS.message.split("\n").slice(1).join('\n')
+    NFTDETAILS = JSON.parse(NFTDETAILS)
+    output = NFTDETAILS["transactionHash"]
+
+  }).catch(err => {
+    console.log("NFT TRANSFER ERROR", err)
+    output = null
+  })
+
+  return output
+
+}
+
+//CLAIM TOKEN FOR DIFFERENT GROUP
+async function claimToken(user_id) {
+  let output = null
+  let tokenClaimDetails = `SELECT register_user.* , user_wallet.*
+  FROM register_user
+  JOIN user_wallet
+  ON register_user.user_wallet_id = user_wallet.id
+  WHERE register_user.user_id = '${user_id}' 
+  AND register_user.token = '${1}' AND register_user.success = '${0}';`;
+  let updateQuery = `UPDATE register_user SET token ="${0}" WHERE user_id = '${user_id}'`;
+
+  return new Promise((resolve, reject) => {
+    conn.query(tokenClaimDetails, (err, result) => {
+      if (err) {
+        return reject(output)
+      }
+      else if (result.length > 0) {
+        conn.query(updateQuery, (err, result) => {
+
+          if (err) {
+            return reject(output)
+          }
+        })
+        output = result[0].walletAddress;
+        return resolve(output)
+      } else {
+        return resolve(output)
+      }
+    })
+  })
+
+}
+
+//CLAIM NFT FOR DIFFERENT GROUP
+async function claimNFT(user_id) {
+  let output = {
+    walletAddress: null,
+    user_wallet_id: null
+  }
+  let tokenClaimDetails = `SELECT register_user.* , user_wallet.*
+  FROM register_user
+  JOIN user_wallet
+  ON register_user.user_wallet_id = user_wallet.id
+  WHERE register_user.user_id = '${user_id}' 
+  AND register_user.nft = '${1}' AND register_user.success = '${0}';`;
+  let updateQuery = `UPDATE register_user SET nft ="${0}" WHERE user_id = '${user_id}'`;
+
+  return new Promise((resolve, reject) => {
+    conn.query(tokenClaimDetails, (err, result) => {
+      console.log("CLAIM NFT", err, result)
+
+      if (err) {
+        return reject(output)
+      }
+      else if (result.length > 0) {
+
+        conn.query(updateQuery, (err, result) => {
+
+          if (err) {
+            return reject(output)
+          }
+        })
+        output.walletAddress = result[0].walletAddress;
+        output.user_wallet_id = result[0].user_wallet_id;
+        return resolve(output)
+      } else {
+        return resolve(output)
+      }
+    })
+  })
+
+}
+
+//CLAIM Watch Wallet FOR DIFFERENT GROUP
+async function claimWatchWallet(user_id) {
+  let output = {
+    walletAddress: null,
+    user_wallet_id: null
+  }
+  let tokenClaimDetails = `SELECT register_user.* , user_wallet.*
+  FROM register_user
+  JOIN user_wallet
+  ON register_user.user_wallet_id = user_wallet.id
+  WHERE register_user.user_id = '${user_id}' 
+  AND register_user.watch = '${1}' AND register_user.success = '${0}';`;
+  let updateQuery = `UPDATE register_user SET watch ="${0}" WHERE user_id = '${user_id}'`;
+
+  return new Promise((resolve, reject) => {
+    conn.query(tokenClaimDetails, (err, result) => {
+      console.log("CLAIM WATCH WALLET", err, result)
+
+      if (err) {
+        return reject(output)
+      }
+      else if (result.length > 0) {
+
+        conn.query(updateQuery, (err, result) => {
+
+          if (err) {
+            return reject(output)
+          }
+        })
+        output.walletAddress = result[0].walletAddress;
+        output.user_wallet_id = result[0].user_wallet_id;
+        return resolve(output)
+      } else {
+        return resolve(output)
+      }
+    })
+  })
+
+}
+
+//CLAIM Mining PC FOR DIFFERENT GROUP
+async function claimMiningPc(user_id) {
+  let output = {
+    walletAddress: null,
+    user_wallet_id: null
+  }
+  let tokenClaimDetails = `SELECT register_user.* , user_wallet.*
+  FROM register_user
+  JOIN user_wallet
+  ON register_user.user_wallet_id = user_wallet.id
+  WHERE register_user.user_id = '${user_id}' 
+  AND register_user.miningPc = '${1}' AND register_user.success = '${0}';`;
+  let updateQuery = `UPDATE register_user SET miningPc ="${0}" WHERE user_id = '${user_id}'`;
+
+  return new Promise((resolve, reject) => {
+    conn.query(tokenClaimDetails, (err, result) => {
+      console.log("CLAIM WATCH WALLET", err, result)
+
+      if (err) {
+        return reject(output)
+      }
+      else if (result.length > 0) {
+
+        conn.query(updateQuery, (err, result) => {
+
+          if (err) {
+            return reject(output)
+          }
+        })
+        output.walletAddress = result[0].walletAddress;
+        output.user_wallet_id = result[0].user_wallet_id;
+        return resolve(output)
+      } else {
+        return resolve(output)
+      }
+    })
+  })
+
+}
+
+//CLAIM Mining PC FOR DIFFERENT GROUP
+async function claimSwapToken(user_id) {
+  let output = {
+    walletAddress: null,
+    user_wallet_id: null
+  }
+  let tokenClaimDetails = `SELECT register_user.* , user_wallet.*
+  FROM register_user
+  JOIN user_wallet
+  ON register_user.user_wallet_id = user_wallet.id
+  WHERE register_user.user_id = '${user_id}' 
+  AND register_user.swapToken = '${1}' AND register_user.success = '${0}';`;
+  let updateQuery = `UPDATE register_user SET swapToken ="${0}" WHERE user_id = '${user_id}'`;
+
+  return new Promise((resolve, reject) => {
+    conn.query(tokenClaimDetails, (err, result) => {
+      console.log("CLAIM WATCH WALLET", err, result)
+
+      if (err) {
+        return reject(output)
+      }
+      else if (result.length > 0) {
+
+        conn.query(updateQuery, (err, result) => {
+
+          if (err) {
+            return reject(output)
+          }
+        })
+        output.walletAddress = result[0].walletAddress;
+        output.user_wallet_id = result[0].user_wallet_id;
+        return resolve(output)
+      } else {
+        return resolve(output)
+      }
+    })
+  })
+
+}
+
+
 async function customTokenBalanceChecker() {
   const CustomTokenABI = require("./contactsABI/HuxhTokenABI.json");
   const abiArray = CustomTokenABI;
@@ -2402,116 +2611,188 @@ async function givenTokenBalance(walletAddress) {
 // checkGiveTokenBalance()
 async function userDetails(user_id) {
   const userndUserRegisterQuery = `
-                    SELECT user_wallet.*, register_user.*
+                    SELECT user_wallet.*, register_user.* , group_info.*
                     FROM user_wallet 
                     JOIN register_user
                     ON user_wallet.id=register_user.user_wallet_id
-                    WHERE user_id LIKE '${user_id}'`;
+                    JOIN group_info
+                    ON user_wallet.id=register_user.user_wallet_id
+                    WHERE user_id LIKE '${user_id}' and group_info.success = '${0}'`;
+
+  const reCheckSuccessQuery = `
+  SELECT user_wallet.*, register_user.* , group_info.*
+  FROM user_wallet 
+  JOIN register_user
+  ON user_wallet.id=register_user.user_wallet_id
+  JOIN group_info
+  ON user_wallet.id=register_user.user_wallet_id
+  WHERE user_id LIKE '${user_id}' and group_info.success = '${1}' AND register_user.success = '${1}'`;
 
   return new Promise((resolve, reject) => {
-    conn.query(userndUserRegisterQuery, (err, result) => {
-      console.log("result======", result.length)
+    conn.query(userndUserRegisterQuery, async (err, result) => {
+      console.log("result======", result)
       // console.log("result++++++", result[0].token)
       if (err) {
-        console.log("ERROR==============asdasdasdasdas", result.length);
+        console.log("ERROR==============asdasdasdasdas", result);
         return null;
       } else if (result.length > 0) {
-        if (result[0].token == 0) {
-          msg1 = "Token already claimed";
-        } else {
-          msg1 = "Claim Token";
+        console.log("I AM HERE", result[0].groupLevel)
+        if (result[0].groupLevel == 1) {
+
+
+          if (result[0].token == 0) {
+            msg1 = "Token already claimed";
+          } else {
+            msg1 = "Claim Token";
+          }
+          if (result[0].nft == 0) {
+            msg2 = "NFT already claimed";
+          } else {
+            msg2 = "Claim NFT";
+          }
+
+
+          customMessage =
+            "Available comamnd  \n" +
+            "/all - show all available commands \n" +
+            `Token Status - ${msg1}\n` +
+            `NTF Status - ${msg2}\n`
+
+
+
+        } else if (result[0].groupLevel == 2) {
+
+
+          if (result[0].token == 0) {
+            msg1 = "Token already claimed";
+          } else {
+            msg1 = "Claim Token";
+          }
+          if (result[0].nft == 0) {
+            msg2 = "NFT already claimed";
+          } else {
+            msg2 = "Claim NFT";
+          }
+
+
+          customMessage =
+            "Available comamnd  \n" +
+            "/all - show all available commands \n" +
+            `Token Status - ${msg1}\n` +
+            `NTF Status - ${msg2}\n`
+
+
+        } else if (result[0].groupLevel == 3) {
+
+          if (result[0].token == 0) {
+            msg1 = "Token already claimed";
+          } else {
+            msg1 = "Claim Token";
+          }
+          if (result[0].nft == 0) {
+            msg2 = "NFT already claimed";
+          } else {
+            msg2 = "Claim NFT";
+          }
+
+
+          customMessage =
+            "Available comamnd  \n" +
+            "/all - show all available commands \n" +
+            `Token Status - ${msg1}\n` +
+            `NTF Status - ${msg2}\n`
+
         }
-        if (result[0].nft == 0) {
-          msg2 = "NFT already claimed";
-        } else {
-          msg2 = "Claim NFT";
+        else if (result[0].groupLevel == 4) {
+
+          if (result[0].token == 0) {
+            msg1 = "Token already claimed";
+          } else {
+            msg1 = "Claim Token";
+          }
+          if (result[0].nft == 0) {
+            msg2 = "NFT already claimed";
+          } else {
+            msg2 = "Claim NFT";
+          }
+          if (result[0].watch == 0) {
+            msg3 = "Watch Wallet already claimed";
+          } else {
+            msg3 = "Claim Watch Wallet";
+          }
+
+
+          customMessage =
+            "Available comamnd  \n" +
+            "/all - show all available commands \n" +
+            `Token Status - ${msg1}\n` +
+            `NTF Status - ${msg2}\n` +
+            `Watch Wallet Status - ${msg3}\n`
         }
-        if (result[0].watch == 0) {
-          msg3 = "Watch Wallet already claimed";
-        } else {
-          msg3 = "Claim Watch Wallet";
-        }
-        if (result[0].miningPc == 0) {
-          msg4 = "Mining PC already claimed";
-        } else {
-          msg4 = "Claim Mining PC";
-        }
-        if (result[0].swapToken == 0) {
-          msg5 = "Swap Token already claimed";
-        } else {
-          msg5 = "Claim Swap Token";
+        else if (result[0].groupLevel == 5) {
+
+          if (result[0].token == 0) {
+            msg1 = "Token already claimed";
+          } else {
+            msg1 = "Claim Token";
+          }
+          if (result[0].nft == 0) {
+            msg2 = "NFT already claimed";
+          } else {
+            msg2 = "Claim NFT";
+          }
+          if (result[0].watch == 0) {
+            msg3 = "Watch Wallet already claimed";
+          } else {
+            msg3 = "Claim Watch Wallet";
+          }
+          if (result[0].miningPc == 0) {
+            msg4 = "Mining PC already claimed";
+          } else {
+            msg4 = "Claim Mining PC";
+          }
+          if (result[0].swapToken == 0) {
+            msg5 = "Swap Token already claimed";
+          } else {
+            msg5 = "Claim Swap Token";
+          }
+
+          customMessage =
+            "Available comamnd  \n" +
+            "/all - show all available commands \n" +
+            // "/walletAddress## - claim your giftBox Example This:/0x885943c5c8cf505a05b960e1d13052d0f033952e##\n"
+            `Token Status - ${msg1}\n` +
+            `NTF Status - ${msg2}\n` +
+            `Watch Wallet Status - ${msg3}\n` +
+            `Mining PC Status - ${msg4}\n` +
+            `SWAP TOKEN Status - ${msg5}\n`;
+
         }
 
-        customMessage =
-          "Available comamnd  \n" +
-          "/all - show all available commands \n" +
-          // "/walletAddress## - claim your giftBox Example This:/0x885943c5c8cf505a05b960e1d13052d0f033952e##\n"
-          `Token Status - ${msg1}\n` +
-          `NTF Status - ${msg2}\n` +
-          `Watch Wallet Status - ${msg3}\n` +
-          `Mining PC Status - ${msg4}\n` +
-          `SWAP TOKEN Status - ${msg5}\n`;
+        return resolve(customMessage);
+
       } else {
-        customMessage = null;
+
+        return resolve(await new Promise((resolve, reject) => {
+          conn.query(reCheckSuccessQuery, (err, result) => {
+            if (err) {
+              console.log("err 3", err);
+              return reject(customMessage);
+            } else if(result.length > 0){
+              console.log("result=============", result);
+              customMessage = -1;
+              return resolve(customMessage);
+            } else {
+              customMessage = -2;
+              return resolve(customMessage);
+            }
+          });
+        }));
+
       }
-      return resolve(customMessage);
+
     });
   });
-  conn.query(userndUserRegisterQuery, async (err, result) => {
-    if (err) {
-      // return res.status(501).json({
-      //     msg: "Number checking error",
-      //     error: err.message
-      // })
-      console.log("erro", err);
-      await axios.post(`${TELEGRAM_API}/sendMessage`, {
-        chat_id: chatId,
-        text: `Server busy try again later...`,
-      });
-    } else if (result.length > 0) {
-      console.log("rest============", result);
-      if (result.token == 1) {
-        msg1 = "Token already claimed";
-      } else {
-        msg1 = "Claim Token";
-      }
-      if (result.nft == 1) {
-        msg2 = "NFT already claimed";
-      } else {
-        msg2 = "Claim NFT";
-      }
-      if (result.watch == 1) {
-        msg3 = "Watch Wallet already claimed";
-      } else {
-        msg3 = "Claim Watch Wallet";
-      }
-      if (result.miningPc == 1) {
-        msg4 = "Mining PC already claimed";
-      } else {
-        msg4 = "Claim Mining PC";
-      }
-      if (result.swapToken == 1) {
-        msg5 = "Swap Token already claimed";
-      } else {
-        msg5 = "Claim Swap Token";
-      }
-
-      customMessage =
-        "Available comamnd  \n" +
-        "/all - show all available commands \n" +
-        // "/walletAddress## - claim your giftBox Example This:/0x885943c5c8cf505a05b960e1d13052d0f033952e##\n"
-        `/claimtoken#walletAddress - ${msg1}\n` +
-        `/claimnft#walletAddress - ${msg2}\n` +
-        `/claimwatchwallet#walletAddress - ${msg3}\n` +
-        `/claimminingpc#walletAddress - ${msg4}\n` +
-        `/claimswaptoken#walletAddress - ${msg5}\n` +
-        `/giftboxstatus - see your gift-box information \n`;
-      console.log("customMessage", customMessage);
-      return customMessage;
-    }
-  });
-  console.log("RETURING.................", customMessage);
-  return customMessage;
 }
 //check user group validity
 async function checkGroupAccess(userId) {
@@ -2547,32 +2828,30 @@ async function checkGroupAccess(userId) {
 // }, null, true, 'Asia/Dhaka')
 // // job.start()
 
-async function groupCheck() {
-  const groupQuery = `SELECT * FROM group_info;`;
-  let groupId;
-  let details = await new Promise((resolve, reject) => {
-    conn.query(groupQuery, (err, result) => {
+async function checkPreviousTransaction(user_id) {
+  const userWalletExist = `SELECT register_user.*,user_wallet.*
+  FROM register_user
+  JOIN user_wallet
+  ON register_user.user_wallet_id=user_wallet.id
+  WHERE register_user.user_id = '${user_id}' AND register_user.success = ${1};`;
+  let output = 0
+  return await new Promise((resolve, reject) => {
+    conn.query(userWalletExist, (err, result) => {
       if (err) {
-        console.log("eerr", err);
+        reject(output)
+      } else if (result.length > 0) {
+        console.log("checkPreviousTransaction", result)
+        result.map(element => {
+          output = output + element.approvedBalance
+        })
+        return resolve(output);
       } else {
-        return resolve(result);
+        return resolve(output)
       }
     });
   });
-  console.log("details", details);
-  if (details.length > 0) {
-    groupId = details[0].groupId;
 
-    console.log("asdasdasdads", groupId);
-    await axios
-      .post(`${TELEGRAM_API}/sendMessage`, {
-        chat_id: groupId,
-        text: "This wallet address is already registered",
-      })
-      .catch((err) => {
-        console.log("error========", err);
-      });
-  }
+
 }
 
 let signalData = ``;
@@ -2586,7 +2865,7 @@ const init = async () => {
     .get(`${TELEGRAM_API}/setWebhook?url=${WEBHOOK_URL}`)
     .then((res) => {
       app.post(URI, async (req, res) => {
-        console.log("req.body",req.body)
+        console.log("req.body", req.body)
         if (req.body.message && req.body.message.group_chat_created) {
           axios.post(`${TELEGRAM_API}/sendMessage`, {
             chat_id: req.body.message.chat.id,
@@ -2602,9 +2881,9 @@ const init = async () => {
         }
         else if (req.body.message || req.body.callback_query) {
           let chatId;
-          let backToHomeText = 
-          "Available comamnd  \n" +
-          "/all - show all available commands \n" 
+          let backToHomeText =
+            "Available comamnd  \n" +
+            "/all - show all available commands \n"
           let backToHomeButton = {
             inline_keyboard: [
               [
@@ -2629,7 +2908,7 @@ const init = async () => {
           let count;
           let text;
           let keyWord;
-          let flag = 0;
+          let isServerError = false;
           let userId;
           let stageOneGroupUrl = "https://t.me/+bWXj3yu_x3UzNTJl";
           let firstGroupName = "XGX Gift-Box";
@@ -2718,14 +2997,14 @@ const init = async () => {
           ) {
             console.log("I AM HERE");
             chat_id = req.body.message.chat.id;
-            text = `Welcome ${req.body.message.new_chat_member.first_name}`  +  '\n' +
-            "AGAME PARTNER" + '\n' +
-            "Contributions" + '\n' +
-            "100" + '\n' +
-            "200" + '\n' +
-            "500" + '\n' +
-            "1000" + '\n'+
-            "2000" 
+            text = `Welcome ${req.body.message.new_chat_member.first_name}` + '\n' +
+              "AGAME PARTNER" + '\n' +
+              "Contributions" + '\n' +
+              "100" + '\n' +
+              "200" + '\n' +
+              "500" + '\n' +
+              "1000" + '\n' +
+              "2000"
             // await axios.post(`${TELEGRAM_API}/sendMessage`, {
             //     chat_id: req.body.callback_query.message.chat.id,
             //     text: 'Welcome New Member'
@@ -2740,7 +3019,7 @@ const init = async () => {
             console.log("I AM HERE");
             chat_id = req.body.message.chat.id;
             text = `User left the group`
-          } 
+          }
           //platinum group 
           else if (
             req.body.callback_query &&
@@ -2820,7 +3099,7 @@ const init = async () => {
                 // })
                 // kickFlag = true
               });
-          } 
+          }
           //gold group
           else if (
             req.body.callback_query &&
@@ -2900,13 +3179,13 @@ const init = async () => {
                 // })
                 // kickFlag = true
               });
-          } 
+          }
           //titanium group
           else if (
             req.body.callback_query &&
             req.body.callback_query.message.chat.title == TitaniumGroup.name
           ) {
-            console.log("PLATINUM GROUP",)
+            console.log("TitaniumGroup GROUP",)
             await checkGroupAccess(req.body.callback_query.from.id)
               .then(async (res) => {
                 if (res.length > 0) {
@@ -2927,30 +3206,6 @@ const init = async () => {
                         {
                           text: "Claim NFT",
                           callback_data: "Claim NFT",
-                        },
-                      ],
-                      [
-                        {
-                          text: "Claim Watch Wallet",
-                          callback_data: "Claim Watch Wallet",
-                        },
-                      ],
-                      [
-                        {
-                          text: "Claim Mining PC",
-                          callback_data: "Claim Mining PC",
-                        },
-                      ],
-                      [
-                        {
-                          text: "Claim Swap Token Distribution",
-                          callback_data: "Claim Swap Token Distribution",
-                        },
-                      ],
-                      [
-                        {
-                          text: "Check Wallet Token",
-                          callback_data: "Check Wallet Token",
                         },
                       ],
                     ],
@@ -2980,13 +3235,13 @@ const init = async () => {
                 // })
                 // kickFlag = true
               });
-          } 
+          }
           //silver group
           else if (
             req.body.callback_query &&
             req.body.callback_query.message.chat.title == SilverGroup.name
           ) {
-            console.log("PLATINUM GROUP",)
+            console.log("SilverGroup GROUP",)
             await checkGroupAccess(req.body.callback_query.from.id)
               .then(async (res) => {
                 if (res.length > 0) {
@@ -3009,30 +3264,6 @@ const init = async () => {
                           callback_data: "Claim NFT",
                         },
                       ],
-                      [
-                        {
-                          text: "Claim Watch Wallet",
-                          callback_data: "Claim Watch Wallet",
-                        },
-                      ],
-                      [
-                        {
-                          text: "Claim Mining PC",
-                          callback_data: "Claim Mining PC",
-                        },
-                      ],
-                      [
-                        {
-                          text: "Claim Swap Token Distribution",
-                          callback_data: "Claim Swap Token Distribution",
-                        },
-                      ],
-                      [
-                        {
-                          text: "Check Wallet Token",
-                          callback_data: "Check Wallet Token",
-                        },
-                      ],
                     ],
                   };
                 } else {
@@ -3051,22 +3282,119 @@ const init = async () => {
               })
               .catch(async (er) => {
                 console.log("ANOTHER RERE", er.data);
-                // console.log("=====",req.body)
-                // console.log("++++++++",req.body.messsage.chat)
-                // await axios.post(`${TELEGRAM_API}/banChatMember`, {
-                //     chat_id: req.body.callback_query.message.chat.id,
-                //     user_id: req.body.callback_query.from.id,
-                //     text: req.body.callback_query.message.text
-                // })
-                // kickFlag = true
+                isServerError = true
               });
-          } 
+          }
           //bronze group
           else if (
             req.body.callback_query &&
             req.body.callback_query.message.chat.title == BronzeGroup.name
           ) {
-            console.log("PLATINUM GROUP",)
+            console.log("BronzeGroup GROUP",)
+            await checkGroupAccess(req.body.callback_query.from.id)
+              .then(async (res) => {
+                if (res.length > 0) {
+                  // console.log("res=========================", res)
+                  // chatId = req.body.callback_query.from.id
+                  chatId = req.body.callback_query.message.chat.id;
+                  text = req.body.callback_query.data;
+
+                  keyBoard = {
+                    inline_keyboard: [
+                      [
+                        {
+                          text: "Claim Token",
+                          callback_data: "Claim Token",
+                        },
+                      ],
+                      [
+                        {
+                          text: "Claim NFT",
+                          callback_data: "Claim NFT",
+                        },
+                      ],
+                    ],
+                  };
+                } else {
+                  console.log("BANNING UNKWNON GROUP MEMBER", req.body);
+                  await axios
+                    .post(`${TELEGRAM_API}/banChatMember`, {
+                      chat_id: req.body.callback_query.message.chat.id,
+                      user_id: req.body.callback_query.from.id,
+                      text: req.body.callback_query.message.text,
+                    })
+                    .catch((err) => {
+                      console.log("WTFFFF", err);
+                    });
+                  kickFlag = true;
+                }
+              })
+              .catch(async (er) => {
+                console.log("ANOTHER RERE", er.data);
+                isServerError = true
+              });
+          }
+          //GoldGroup group
+          else if (
+            req.body.callback_query &&
+            req.body.callback_query.message.chat.title == GoldGroup.name
+          ) {
+            console.log("GoldGroup GROUP")
+            await checkGroupAccess(req.body.callback_query.from.id)
+              .then(async (res) => {
+                if (res.length > 0) {
+                  // console.log("res=========================", res)
+                  // chatId = req.body.callback_query.from.id
+                  chatId = req.body.callback_query.message.chat.id;
+                  text = req.body.callback_query.data;
+
+                  keyBoard = {
+                    inline_keyboard: [
+                      [
+                        {
+                          text: "Claim Token",
+                          callback_data: "Claim Token",
+                        },
+                      ],
+                      [
+                        {
+                          text: "Claim NFT",
+                          callback_data: "Claim NFT",
+                        },
+                      ],
+                      [
+                        {
+                          text: "Claim Watch Wallet",
+                          callback_data: "Claim Watch Wallet",
+                        },
+                      ],
+                    ],
+                  };
+                } else {
+                  console.log("BANNING UNKWNON GROUP MEMBER", req.body);
+                  await axios
+                    .post(`${TELEGRAM_API}/banChatMember`, {
+                      chat_id: req.body.callback_query.message.chat.id,
+                      user_id: req.body.callback_query.from.id,
+                      text: req.body.callback_query.message.text,
+                    })
+                    .catch((err) => {
+                      console.log("WTFFFF", err);
+                    });
+                  kickFlag = true;
+                }
+              })
+              .catch(async (er) => {
+                console.log("ANOTHER RERE", er.data);
+                isServerError = true
+              });
+          }
+          //PlatinumGroup group
+          else if (
+            req.body.callback_query &&
+            req.body.callback_query.message.chat.title == PlatinumGroup.name
+          ) {
+            console.log("PlatinumGroup GROUP",)
             await checkGroupAccess(req.body.callback_query.from.id)
               .then(async (res) => {
                 if (res.length > 0) {
@@ -3107,12 +3435,6 @@ const init = async () => {
                           callback_data: "Claim Swap Token Distribution",
                         },
                       ],
-                      [
-                        {
-                          text: "Check Wallet Token",
-                          callback_data: "Check Wallet Token",
-                        },
-                      ],
                     ],
                   };
                 } else {
@@ -3140,7 +3462,7 @@ const init = async () => {
                 // })
                 // kickFlag = true
               });
-          } 
+          }
           else if (
             req.body.callback_query &&
             req.body.callback_query.message.chat.title == publicGroup &&
@@ -4509,18 +4831,13 @@ const init = async () => {
               ],
             };
           }
-          //dynamic message for claim status
-          //platinum group all msg 
+
+          // /all msg from AGAME Silver Group
           else if (
             !req.body.callback_query &&
             req.body.message.text == '/all' &&
             (
-              req.body.message.chat.title == firstGroupName ||
-              req.body.message.chat.title == PlatinumGroup.name||
-              req.body.message.chat.title == GoldGroup.name ||
-              req.body.message.chat.title == TitaniumGroup.name ||
-              req.body.message.chat.title == BronzeGroup.name ||
-              req.body.message.chat.title == SilverGroup.name 
+              req.body.message.chat.title == SilverGroup.name
             )
           ) {
             giftBoxChannel = true
@@ -4531,7 +4848,285 @@ const init = async () => {
             await userDetails(userId)
               .then(async (res) => {
                 console.log("RESPNSE ===============", res);
-                if (res) {
+                if (res && res!= -2) {
+                  initialTest = res;
+                  text = req.body.message.text.toLowerCase();
+
+                  temp = req.body.message.text;
+
+                  keyWord = req.body.message.text.split("#")[0];
+
+                  keyBoard = {
+                    inline_keyboard: [
+                      [
+                        {
+                          text: "Claim Token",
+                          callback_data: "Claim Token",
+                        },
+                      ],
+                      [
+                        {
+                          text: "Claim NFT",
+                          callback_data: "Claim NFT",
+                        },
+                      ],
+                    ],
+                  };
+                  //counting # in a string
+                  // count = (temp.match(/#/g) || []).length;
+                  // console.log(count);
+
+
+                  // else if (res == -1) {
+                  //   initialTest = 'You have claimed everything from this group';
+                  //   keyBoard = {
+                  //     inline_keyboard: [
+  
+                  //     ],
+                  //   };
+                  // }
+
+                } 
+                else {
+                  // console.log("HERE FUCKING HERE")
+                  await axios
+                    .post(`${TELEGRAM_API}/banChatMember`, {
+                      chat_id: req.body.message.chat.id,
+                      user_id: req.body.message.from.id,
+                      text: req.body.message.text,
+                    })
+                    .catch((err) => {
+                      console.log("OMG", err);
+                    });
+                  kickFlag = true;
+                }
+              })
+              .catch((err) => {
+                console.log("====================", err);
+                isServerError = true
+              });
+          }
+          // /all msg from AGAME Bronze Group
+          else if (
+            !req.body.callback_query &&
+            req.body.message.text == '/all' &&
+            (
+              req.body.message.chat.title == BronzeGroup.name
+            )
+          ) {
+            console.log("I AM IN BRONZEGROUP", BronzeGroup.name)
+            giftBoxChannel = true
+            chatId = req.body.message.chat.id;
+            userId = req.body.message.from.id;
+            // userWalletAddress = (req.body.message.text).split("#")[1]
+
+            await userDetails(userId)
+              .then(async (res) => {
+                console.log("RESPNSE ===============", res);
+                if (res && res != -2) {
+                  initialTest = res;
+                  text = req.body.message.text.toLowerCase();
+
+                  temp = req.body.message.text;
+
+                  keyWord = req.body.message.text.split("#")[0];
+
+                  keyBoard = {
+                    inline_keyboard: [
+                      [
+                        {
+                          text: "Claim Token",
+                          callback_data: "Claim Token",
+                        },
+                      ],
+                      [
+                        {
+                          text: "Claim NFT",
+                          callback_data: "Claim NFT",
+                        },
+                      ],
+                    ],
+                  };
+                  //counting # in a string
+                  // count = (temp.match(/#/g) || []).length;
+                  // console.log(count);
+                } 
+                else {
+                  // console.log("HERE FUCKING HERE")
+                  await axios
+                    .post(`${TELEGRAM_API}/banChatMember`, {
+                      chat_id: req.body.message.chat.id,
+                      user_id: req.body.message.from.id,
+                      text: req.body.message.text,
+                    })
+                    .catch((err) => {
+                      console.log("OMG", err);
+                    });
+                  kickFlag = true;
+                }
+              })
+              .catch((err) => {
+                console.log("====================", err);
+                isServerError = true
+              });
+          }
+          // /all msg from AGAME TitaniumGroup Group
+          else if (
+            !req.body.callback_query &&
+            req.body.message.text == '/all' &&
+            (
+              req.body.message.chat.title == TitaniumGroup.name
+            )
+          ) {
+            console.log("I AM IN BRONZEGROUP", BronzeGroup.name)
+            giftBoxChannel = true
+            chatId = req.body.message.chat.id;
+            userId = req.body.message.from.id;
+            // userWalletAddress = (req.body.message.text).split("#")[1]
+
+            await userDetails(userId)
+              .then(async (res) => {
+                console.log("RESPNSE ===============", res);
+                if (res && res != -2) {
+                  initialTest = res;
+                  text = req.body.message.text.toLowerCase();
+
+                  temp = req.body.message.text;
+
+                  keyWord = req.body.message.text.split("#")[0];
+
+                  keyBoard = {
+                    inline_keyboard: [
+                      [
+                        {
+                          text: "Claim Token",
+                          callback_data: "Claim Token",
+                        },
+                      ],
+                      [
+                        {
+                          text: "Claim NFT",
+                          callback_data: "Claim NFT",
+                        },
+                      ],
+                    ],
+                  };
+                  //counting # in a string
+                  // count = (temp.match(/#/g) || []).length;
+                  // console.log(count);
+                } 
+                else {
+                  // console.log("HERE FUCKING HERE")
+                  await axios
+                    .post(`${TELEGRAM_API}/banChatMember`, {
+                      chat_id: req.body.message.chat.id,
+                      user_id: req.body.message.from.id,
+                      text: req.body.message.text,
+                    })
+                    .catch((err) => {
+                      console.log("OMG", err);
+                    });
+                  kickFlag = true;
+                }
+              })
+              .catch((err) => {
+                console.log("====================", err);
+                isServerError = true
+              });
+          }
+          // /all msg from AGAME GoldGroup Group
+          else if (
+            !req.body.callback_query &&
+            req.body.message.text == '/all' &&
+            (
+              req.body.message.chat.title == GoldGroup.name
+            )
+          ) {
+            console.log("I AM IN BRONZEGROUP", GoldGroup.name)
+            giftBoxChannel = true
+            chatId = req.body.message.chat.id;
+            userId = req.body.message.from.id;
+            // userWalletAddress = (req.body.message.text).split("#")[1]
+
+            await userDetails(userId)
+              .then(async (res) => {
+                console.log("RESPNSE ===============", res);
+                if (res && res != -2) {
+                  initialTest = res;
+                  text = req.body.message.text.toLowerCase();
+
+                  temp = req.body.message.text;
+
+                  keyWord = req.body.message.text.split("#")[0];
+
+                  keyBoard = {
+                    inline_keyboard: [
+                      [
+                        {
+                          text: "Claim Token",
+                          callback_data: "Claim Token",
+                        },
+                      ],
+                      [
+                        {
+                          text: "Claim NFT",
+                          callback_data: "Claim NFT",
+                        },
+                      ],
+                      [
+                        {
+                          text: "Claim Watch Wallet",
+                          callback_data: "Claim Watch Wallet",
+                        },
+                      ],
+                    ],
+                  };
+                  //counting # in a string
+                  // count = (temp.match(/#/g) || []).length;
+                  // console.log(count);
+                } 
+                else {
+                  // console.log("HERE FUCKING HERE")
+                  await axios
+                    .post(`${TELEGRAM_API}/banChatMember`, {
+                      chat_id: req.body.message.chat.id,
+                      user_id: req.body.message.from.id,
+                      text: req.body.message.text,
+                    })
+                    .catch((err) => {
+                      console.log("OMG", err);
+                    });
+                  kickFlag = true;
+                }
+              })
+              .catch((err) => {
+                console.log("====================", err);
+                isServerError = true
+              });
+          }
+          //dynamic message for claim status
+          //platinum group all msg 
+          else if (
+            !req.body.callback_query &&
+            req.body.message.text == '/all' &&
+            (
+              req.body.message.chat.title == firstGroupName ||
+              req.body.message.chat.title == PlatinumGroup.name ||
+              req.body.message.chat.title == GoldGroup.name ||
+              req.body.message.chat.title == TitaniumGroup.name ||
+              req.body.message.chat.title == BronzeGroup.name ||
+              req.body.message.chat.title == SilverGroup.name
+            )
+          ) {
+            giftBoxChannel = true
+            chatId = req.body.message.chat.id;
+            userId = req.body.message.from.id;
+            // userWalletAddress = (req.body.message.text).split("#")[1]
+
+            await userDetails(userId)
+              .then(async (res) => {
+                console.log("RESPNSE ===============", res);
+                if (res && res!= -2) {
                   initialTest = res;
                   text = req.body.message.text.toLowerCase();
 
@@ -5005,90 +5600,387 @@ const init = async () => {
                     ON register_user.user_wallet_id = user_wallet.id
                     WHERE register_user.user_id = '${user_id}' AND token = '${1}' ;`;
             //check token claimed or not
-            conn.query(tokenClaimDetails, async (err, result) => {
-              if (err) {
-                // return res.status(501).json({
-                //     msg: "Number checking error",
-                //     error: err.message
-                // })
-                console.log("erro", err);
-                await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                  chat_id: chatId,
-                  text: `Server busy try again later...`,
-                });
-              } else if (result.length > 0) {
-                walletAddress = result[0].walletAddress;
-                //update table walletKey status
-                conn.query(updateQuery, async (err, result) => {
-                  if (err) {
-                    // return res.status(501).json({
-                    //     msg: "Number checking error",
-                    //     error: err.message
-                    // })
-                    console.log("erro", err);
+
+            let CLAIMTOKEN = await claimToken(user_id)
+            console.log("CLAIMTOKENCLAIMTOKEN", CLAIMTOKEN)
+            if (CLAIMTOKEN) {
+
+              if (req.body.callback_query.message.chat.title == 'AGAME-Silver') {
+
+                await sendXGXToken(CLAIMTOKEN, 10) //10000
+                  .then(async (res) => {
+                    console.log("I AM HERE================", res)
+                    if (res) {
+                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: `Token has been sended into your wallet`,
+                      });
+                    } else {
+                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: `Server busy try again later...`,
+                      });
+                    }
+                  })
+                  .catch(async (er) => {
+                    console.log("er", er);
                     await axios.post(`${TELEGRAM_API}/sendMessage`, {
                       chat_id: chatId,
                       text: `Server busy try again later...`,
                     });
-                  } else {
-                    conn.query(updateQuery, async (err, result) => {
-                      if (err) {
-                        console.log("err-r", err);
-                        await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                          chat_id: chatId,
-                          text: `Server busy try again later...`,
-                        });
-                      }
-                    });
-                    //call token send function
-                    // sendTestBnb(walletAddress)
-                    await sendXGXToken(walletAddress, 10)
-                      .then(async (res) => {
-                        console.log("I AM HERE================", res)
-                        if (res) {
-                          await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                            chat_id: chatId,
-                            text: `Token has been sended into your wallet`,
-                          });
-                        } else {
-                          await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                            chat_id: chatId,
-                            text: `Server busy try again later...`,
-                          });
-                        }
-                      })
-                      .catch(async (er) => {
-                        console.log("er", er);
-                        await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                          chat_id: chatId,
-                          text: `Server busy try again later...`,
-                        });
-                      });
-                  }
-                });
-              } else {
-                await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                  chat_id: chatId,
-                  text: `This wallet has already claimed it's token`,
-                });
-              }
-            });
+                  });
 
+              }
+              //HERE GOES OTHER GROUP NAME AND SPECIFIC TOKEN
+              else if (req.body.callback_query.message.chat.title == 'AGAME-Bronze') {
+
+                await sendXGXToken(CLAIMTOKEN, 20)//20000
+                  .then(async (res) => {
+                    console.log("I AM HERE================", res)
+                    if (res) {
+                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: `Token has been sended into your wallet. Track your transaction ${res}`,
+                      });
+                    } else {
+                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: `Server busy try again later...`,
+                      });
+                    }
+                  })
+                  .catch(async (er) => {
+                    console.log("er", er);
+                    await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                      chat_id: chatId,
+                      text: `Server busy try again later...`,
+                    });
+                  });
+
+              }
+
+
+              //HERE GOES OTHER GROUP NAME AND SPECIFIC TOKEN
+              else if (req.body.callback_query.message.chat.title == 'AGAME-TITANIUM') {
+
+                await sendXGXToken(CLAIMTOKEN, 50)//50000
+                  .then(async (res) => {
+                    console.log("I AM HERE================", res)
+                    if (res) {
+                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: `Token has been sended into your wallet. Track your transaction ${res}`,
+                      });
+                    } else {
+                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: `Server busy try again later...`,
+                      });
+                    }
+                  })
+                  .catch(async (er) => {
+                    console.log("er", er);
+                    await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                      chat_id: chatId,
+                      text: `Server busy try again later...`,
+                    });
+                  });
+
+              }
+
+              //HERE GOES OTHER GROUP NAME AND SPECIFIC TOKEN
+              else if (req.body.callback_query.message.chat.title == 'AGAME-Gold') {
+
+                await sendXGXToken(CLAIMTOKEN, 100)//100000
+                  .then(async (res) => {
+                    console.log("I AM HERE================", res)
+                    if (res) {
+                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: `Token has been sended into your wallet. Track your transaction ${res}`,
+                      });
+                    } else {
+                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: `Server busy try again later...`,
+                      });
+                    }
+                  })
+                  .catch(async (er) => {
+                    console.log("er", er);
+                    await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                      chat_id: chatId,
+                      text: `Server busy try again later...`,
+                    });
+                  });
+
+              }
+
+              //HERE GOES OTHER GROUP NAME AND SPECIFIC TOKEN
+              else if (req.body.callback_query.message.chat.title == 'AGAME-Platinum') {
+
+                await sendXGXToken(CLAIMTOKEN, 200)//500000
+                  .then(async (res) => {
+                    console.log("I AM HERE================", res)
+                    if (res) {
+                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: `Token has been sended into your wallet. Track your transaction ${res}`,
+                      });
+                    } else {
+                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: `Server busy try again later...`,
+                      });
+                    }
+                  })
+                  .catch(async (er) => {
+                    console.log("er", er);
+                    await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                      chat_id: chatId,
+                      text: `Server busy try again later...`,
+                    });
+                  });
+
+              }
+
+
+
+            } else {
+              await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                chat_id: chatId,
+                text: `This wallet has already claimed it's token`,
+              });
+            }
             const mtext =
               "Write the following available commands:\n/all - for all available commands";
-
             await axios.post(`${TELEGRAM_API}/sendMessage`, {
               chat_id: req.body.callback_query.message.chat.id,
               text: mtext,
               reply_markup: JSON.stringify(keyBoard),
             });
           } else if (text == "Claim NFT") {
-            let NTFMSG = "Wait for next round";
+            let NFTTransactionHash
 
-            await axios.post(`${TELEGRAM_API}/sendMessage`, {
-              chat_id: req.body.callback_query.message.chat.id,
-              text: NTFMSG,
-            });
+            let user_id = req.body.callback_query.from.id;
+
+            let CLAIMNFT = await claimNFT(user_id)
+
+            console.log("================================", CLAIMNFT)
+
+            if (CLAIMNFT.walletAddress) {
+
+              await sendNFT(CLAIMNFT.walletAddress)
+                .then(async (res) => {
+                  NFTTransactionHash = res
+                  console.log("I AM HERE================", res)
+                  if (res) {
+
+                    //Update as group policy
+
+                    if (req.body.callback_query.message.chat.title == 'AGAME-Silver') {
+
+                      let updateQueryRegisterUser = `UPDATE register_user SET success ="${1}" WHERE user_id = '${user_id}'`;
+                      let updateQueryGroup = `UPDATE group_info SET success ="${1}" WHERE user_wallet_id = '${CLAIMNFT.user_wallet_id}'`;
+                      conn.query(updateQueryRegisterUser, (err, result) => {
+                        if (err) {
+                          axios.post(`${TELEGRAM_API}/sendMessage`, {
+                            chat_id: chatId,
+                            text: `Server error`,
+                          })
+                        }
+                        else {
+
+                          conn.query(updateQueryGroup, (err, result) => {
+                            if (err) {
+                              axios.post(`${TELEGRAM_API}/sendMessage`, {
+                                chat_id: chatId,
+                                text: `Server error`,
+                              })
+                            } else {
+                              axios.post(`${TELEGRAM_API}/sendMessage`, {
+                                chat_id: chatId,
+                                text: `NFT has been sended into your wallet. Track your transaction ${NFTTransactionHash}`,
+                              });
+                            }
+                          })
+
+                        }
+                      })
+
+                    }
+
+
+                    if (req.body.callback_query.message.chat.title == 'AGAME-Bronze') {
+
+                      let updateQueryRegisterUser = `UPDATE register_user SET success ="${1}" WHERE user_id = '${user_id}'`;
+                      let updateQueryGroup = `UPDATE group_info SET success ="${1}" WHERE user_wallet_id = '${CLAIMNFT.user_wallet_id}'`;
+                      conn.query(updateQueryRegisterUser, (err, result) => {
+                        if (err) {
+                          axios.post(`${TELEGRAM_API}/sendMessage`, {
+                            chat_id: chatId,
+                            text: `Server error`,
+                          })
+                        }
+                        else {
+
+                          conn.query(updateQueryGroup, (err, result) => {
+                            if (err) {
+                              axios.post(`${TELEGRAM_API}/sendMessage`, {
+                                chat_id: chatId,
+                                text: `Server error`,
+                              })
+                            } else {
+                              axios.post(`${TELEGRAM_API}/sendMessage`, {
+                                chat_id: chatId,
+                                text: `NFT has been sended into your wallet. Track your transaction ${NFTTransactionHash}`,
+                              });
+                            }
+                          })
+
+                        }
+                      })
+
+                    }
+
+                    if (req.body.callback_query.message.chat.title == 'AGAME-TITANIUM') {
+
+                      let updateQueryRegisterUser = `UPDATE register_user SET success ="${1}" WHERE user_id = '${user_id}'`;
+                      let updateQueryGroup = `UPDATE group_info SET success ="${1}" WHERE user_wallet_id = '${CLAIMNFT.user_wallet_id}'`;
+                      conn.query(updateQueryRegisterUser, (err, result) => {
+                        if (err) {
+                          axios.post(`${TELEGRAM_API}/sendMessage`, {
+                            chat_id: chatId,
+                            text: `Server error`,
+                          })
+                        }
+                        else {
+
+                          conn.query(updateQueryGroup, (err, result) => {
+                            if (err) {
+                              axios.post(`${TELEGRAM_API}/sendMessage`, {
+                                chat_id: chatId,
+                                text: `Server error`,
+                              })
+                            } else {
+                              axios.post(`${TELEGRAM_API}/sendMessage`, {
+                                chat_id: chatId,
+                                text: `NFT has been sended into your wallet. Track your transaction ${NFTTransactionHash}`,
+                              });
+                            }
+                          })
+
+                        }
+                      })
+
+                    }
+
+                    if (req.body.callback_query.message.chat.title == 'AGAME-Gold') {
+
+
+                      axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: `NFT has been sended into your wallet. Track your transaction ${NFTTransactionHash}`,
+                      })
+
+                      // let updateQueryRegisterUser = `UPDATE register_user SET success ="${1}" WHERE user_id = '${user_id}'`;
+                      // let updateQueryGroup = `UPDATE group_info SET success ="${1}" WHERE user_wallet_id = '${CLAIMNFT.user_wallet_id}'`;
+                      // conn.query(updateQueryRegisterUser, (err, result) => {
+                      //   if (err) {
+                      //     axios.post(`${TELEGRAM_API}/sendMessage`, {
+                      //       chat_id: chatId,
+                      //       text: `Server error`,
+                      //     })
+                      //   }
+                      //   else {
+
+                      //     conn.query(updateQueryGroup, (err, result) => {
+                      //       if (err) {
+                      //         axios.post(`${TELEGRAM_API}/sendMessage`, {
+                      //           chat_id: chatId,
+                      //           text: `Server error`,
+                      //         })
+                      //       } else {
+                      //         axios.post(`${TELEGRAM_API}/sendMessage`, {
+                      //           chat_id: chatId,
+                      //           text: `NFT has been sended into your wallet. Track your transaction ${NFTTransactionHash}`,
+                      //         });
+                      //       }
+                      //     })
+
+                      //   }
+                      // })
+
+                    }
+
+                    if (req.body.callback_query.message.chat.title == 'AGAME-Platinum') {
+
+
+                      axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: `NFT has been sended into your wallet. Track your transaction ${NFTTransactionHash}`,
+                      })
+
+                      // let updateQueryRegisterUser = `UPDATE register_user SET success ="${1}" WHERE user_id = '${user_id}'`;
+                      // let updateQueryGroup = `UPDATE group_info SET success ="${1}" WHERE user_wallet_id = '${CLAIMNFT.user_wallet_id}'`;
+                      // conn.query(updateQueryRegisterUser, (err, result) => {
+                      //   if (err) {
+                      //     axios.post(`${TELEGRAM_API}/sendMessage`, {
+                      //       chat_id: chatId,
+                      //       text: `Server error`,
+                      //     })
+                      //   }
+                      //   else {
+
+                      //     conn.query(updateQueryGroup, (err, result) => {
+                      //       if (err) {
+                      //         axios.post(`${TELEGRAM_API}/sendMessage`, {
+                      //           chat_id: chatId,
+                      //           text: `Server error`,
+                      //         })
+                      //       } else {
+                      //         axios.post(`${TELEGRAM_API}/sendMessage`, {
+                      //           chat_id: chatId,
+                      //           text: `NFT has been sended into your wallet. Track your transaction ${NFTTransactionHash}`,
+                      //         });
+                      //       }
+                      //     })
+
+                      //   }
+                      // })
+
+                    }
+
+
+                  } else {
+                    await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                      chat_id: chatId,
+                      text: `Server busy try again later...`,
+                    });
+                  }
+                })
+                .catch(async (er) => {
+                  console.log("er", er);
+                  await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                    chat_id: chatId,
+                    text: `Server busy try again later...`,
+                  });
+                });
+
+            } else {
+
+              axios.post(`${TELEGRAM_API}/sendMessage`, {
+                chat_id: req.body.callback_query.message.chat.id,
+                text: 'You have already claimed NFT',
+              });
+
+            }
+
+
+            // await axios.post(`${TELEGRAM_API}/sendMessage`, {
+            //   chat_id: req.body.callback_query.message.chat.id,
+            //   text: NTFMSG,
+            // });
 
             const mtext =
               "Write the following available commands:\n/all - for all available commands";
@@ -5101,10 +5993,62 @@ const init = async () => {
           } else if (text == "Claim Watch Wallet") {
             let NTFMSG = "Wait for next round";
 
-            await axios.post(`${TELEGRAM_API}/sendMessage`, {
-              chat_id: req.body.callback_query.message.chat.id,
-              text: NTFMSG,
-            });
+            let user_id = req.body.callback_query.from.id;
+
+            let CLAIMWATCHWALLET = await claimWatchWallet(user_id)
+
+
+            if (CLAIMWATCHWALLET.walletAddress) {
+
+              if (req.body.callback_query.message.chat.title == 'AGAME-Gold') {
+
+                let updateQueryRegisterUser = `UPDATE register_user SET success ="${1}" WHERE user_id = '${user_id}'`;
+                let updateQueryGroup = `UPDATE group_info SET success ="${1}" WHERE user_wallet_id = '${CLAIMWATCHWALLET.user_wallet_id}'`;
+                conn.query(updateQueryRegisterUser, (err, result) => {
+                  if (err) {
+                    axios.post(`${TELEGRAM_API}/sendMessage`, {
+                      chat_id: chatId,
+                      text: `Server error`,
+                    })
+                  }
+                  else {
+
+                    conn.query(updateQueryGroup, (err, result) => {
+                      if (err) {
+                        axios.post(`${TELEGRAM_API}/sendMessage`, {
+                          chat_id: chatId,
+                          text: `Server error`,
+                        })
+                      } else {
+                        axios.post(`${TELEGRAM_API}/sendMessage`, {
+                          chat_id: chatId,
+                          text: `Watch wallet has successfully claimed`,
+                        });
+                      }
+                    })
+
+                  }
+                })
+
+              } else {
+                axios.post(`${TELEGRAM_API}/sendMessage`, {
+                  chat_id: chatId,
+                  text: `Watch wallet has successfully claimed`,
+                });
+              }
+
+            } else {
+              axios.post(`${TELEGRAM_API}/sendMessage`, {
+                chat_id: req.body.callback_query.message.chat.id,
+                text: 'You have already claimed',
+              });
+            }
+
+
+            // await axios.post(`${TELEGRAM_API}/sendMessage`, {
+            //   chat_id: req.body.callback_query.message.chat.id,
+            //   text: NTFMSG,
+            // });
 
             const mtext =
               "Write the following available commands:\n/all - for all available commands";
@@ -5117,10 +6061,30 @@ const init = async () => {
           } else if (text == "Claim Mining PC") {
             let NTFMSG = "Wait for next round";
 
-            await axios.post(`${TELEGRAM_API}/sendMessage`, {
-              chat_id: req.body.callback_query.message.chat.id,
-              text: NTFMSG,
-            });
+
+            let user_id = req.body.callback_query.from.id;
+
+            let CLAIMMININGPC = await claimMiningPc(user_id)
+
+
+            if (CLAIMMININGPC.walletAddress) {
+
+              axios.post(`${TELEGRAM_API}/sendMessage`, {
+                chat_id: chatId,
+                text: `Mining-Pc has successfully claimed`,
+              });
+
+            } else {
+              axios.post(`${TELEGRAM_API}/sendMessage`, {
+                chat_id: chatId,
+                text: `You have already claimed`,
+              });
+            }
+
+            // await axios.post(`${TELEGRAM_API}/sendMessage`, {
+            //   chat_id: req.body.callback_query.message.chat.id,
+            //   text: NTFMSG,
+            // });
 
             const mtext =
               "Write the following available commands:\n/all - for all available commands";
@@ -5133,10 +6097,52 @@ const init = async () => {
           } else if (text == "Claim Swap Token Distribution") {
             let NTFMSG = "Wait for next round";
 
-            await axios.post(`${TELEGRAM_API}/sendMessage`, {
-              chat_id: req.body.callback_query.message.chat.id,
-              text: NTFMSG,
-            });
+            let user_id = req.body.callback_query.from.id;
+
+            let CLAIMSWAPTOKEN = await claimSwapToken(user_id)
+
+
+            if (CLAIMSWAPTOKEN.walletAddress) {
+
+              let updateQueryRegisterUser = `UPDATE register_user SET success ="${1}" WHERE user_id = '${user_id}'`;
+              let updateQueryGroup = `UPDATE group_info SET success ="${1}" WHERE user_wallet_id = '${CLAIMMININGPC.user_wallet_id}'`;
+              conn.query(updateQueryRegisterUser, (err, result) => {
+                if (err) {
+                  axios.post(`${TELEGRAM_API}/sendMessage`, {
+                    chat_id: chatId,
+                    text: `Server error`,
+                  })
+                }
+                else {
+
+                  conn.query(updateQueryGroup, (err, result) => {
+                    if (err) {
+                      axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: `Server error`,
+                      })
+                    } else {
+                      axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: `Swap-Token has successfully claimed`,
+                      });
+                    }
+                  })
+
+                }
+              })
+
+            } else {
+              axios.post(`${TELEGRAM_API}/sendMessage`, {
+                chat_id: chatId,
+                text: `Swap-Token has successfully claimed`,
+              });
+            }
+
+            // await axios.post(`${TELEGRAM_API}/sendMessage`, {
+            //   chat_id: req.body.callback_query.message.chat.id,
+            //   text: NTFMSG,
+            // });
 
             const mtext =
               "Write the following available commands:\n/all - for all available commands";
@@ -5260,8 +6266,10 @@ const init = async () => {
             console.log("req.body.message.from.id", user_id);
 
             let updateQuery = `UPDATE register_user SET token ="${0}" WHERE user_id = '${user_id}'`;
-            // let values = [req.body.message.from.id];
-            const userWalletExist = `SELECT * FROM register_user WHERE user_id LIKE '${user_id}';`;
+            // checking user is already registered for PROCESS TO PAYMENT
+            const userWalletExist = `SELECT * FROM register_user WHERE user_id LIKE '${user_id}' AND success = '${0}';`;
+            //previous record 
+            const userWalletExistPrevious = `SELECT * FROM register_user WHERE user_id LIKE '${user_id}' AND success = '${1}';`;
             //create user wallet
             let personalWalletQuery =
               "INSERT INTO user_wallet (id, walletAddress, privateKey, amount, otp) VALUES (?);";
@@ -5294,10 +6302,18 @@ const init = async () => {
               }
               //did not found user then create userWallet
               else {
-                conn.query(
-                  personalWalletQuery,
-                  [personalWalletData],
-                  async (err, result, fields) => {
+
+                conn.query(userWalletExistPrevious, async (err, result) => {
+                  if (err) {
+                    console.log("error", err);
+                    await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                      chat_id: chatId,
+                      text: "Server is busy try again...",
+                    });
+                  }
+                  else if (result.length > 0) {
+
+                    console.log("I AM HERE FOR REINSERT==============", result)
                     if (err) {
                       console.log("error", err);
                       await axios.post(`${TELEGRAM_API}/sendMessage`, {
@@ -5307,7 +6323,7 @@ const init = async () => {
                     }
                     //create register user details
                     else {
-                      user_wallet_id = result.insertId;
+                      user_wallet_id = result[0].user_wallet_id;
                       let registeredUserData = [
                         null,
                         user_wallet_id,
@@ -5322,96 +6338,137 @@ const init = async () => {
                         registereDuserQuery,
                         [registeredUserData],
                         async (err, result, fields) => {
-                          if (err) {
-                            await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                              chat_id: chatId,
-                              text: "Server is busy try again...",
-                            });
-                          } else {
-                            let bitcoinWalletData = [
-                              null,
-                              user_wallet_id,
-                              privateKeyBTC,
-                              addressBTC,
-                              "BTC",
-                            ];
-                            let litecoinWalletData = [
-                              null,
-                              user_wallet_id,
-                              privateKeyLTC,
-                              addressLTC,
-                              "LTC",
-                            ];
-                            let ethWalletData = [
-                              null,
-                              user_wallet_id,
-                              account.privateKey,
-                              account.address,
-                              "ETH",
-                            ];
+                          if (err) { }
+                        })
+                    }
 
-                            conn.query(
-                              userPrivateWallet,
-                              [bitcoinWalletData],
-                              async (err, result, fields) => {
-                                if (err) {
-                                  console.log("BTC Wallet ERROR", err);
-                                } else {
-                                  console.log("BTC Wallet CREATE");
-                                }
-                              }
-                            );
-                            conn.query(
-                              userPrivateWallet,
-                              [litecoinWalletData],
-                              async (err, result, fields) => {
-                                if (err) {
-                                  console.log("LTC Wallet ERROR", err);
-                                } else {
-                                  console.log("LTC Wallet CREATE");
-                                }
-                              }
-                            );
-                            conn.query(
-                              userPrivateWallet,
-                              [ethWalletData],
-                              async (err, result, fields) => {
-                                if (err) {
-                                  console.log("ETH Wallet ERROR", err);
-                                } else {
-                                  console.log("ETH Wallet CREATE");
-                                }
-                              }
-                            );
-
-                            await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                              chat_id: chatId,
-                              text: "Please checkout your inbox.We have provided you with all details",
-                              reply_markup: JSON.stringify(tempKeyBoard),
-                            });
-
-                            await axios
-                              .post(`${TELEGRAM_API}/sendMessage`, {
-                                chat_id: user_id,
-                                text: `Your Verification code is ${otp}\nDon't share it with anyone.\n
-                                                Bitcoin wallet address - ${addressBTC}\n
-                                                Ethereum wallet address - ${account.address}\n
-                                                Litecoin wallet address - ${addressLTC}\n
-                                                Binance Coin wallet address - ${account.address}\n`,
-                              })
-                              .catch(async (err) => {
-                                console.log("error", err);
+                    await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                      chat_id: chatId,
+                      text: `New request has been made.\nPlease make the payment and Click on CONFIRM PAYMENT`,
+                      reply_markup: JSON.stringify(tempKeyBoard),
+                    });
+                  }
+                  else {
+                    conn.query(
+                      personalWalletQuery,
+                      [personalWalletData],
+                      async (err, result, fields) => {
+                        if (err) {
+                          console.log("error", err);
+                          await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                            chat_id: chatId,
+                            text: "Server is busy try again...",
+                          });
+                        }
+                        //create register user details
+                        else {
+                          user_wallet_id = result.insertId;
+                          let registeredUserData = [
+                            null,
+                            user_wallet_id,
+                            req.body.callback_query.from.id,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                          ];
+                          conn.query(
+                            registereDuserQuery,
+                            [registeredUserData],
+                            async (err, result, fields) => {
+                              if (err) {
                                 await axios.post(`${TELEGRAM_API}/sendMessage`, {
                                   chat_id: chatId,
                                   text: "Server is busy try again...",
                                 });
-                              });
-                          }
+                              } else {
+                                let bitcoinWalletData = [
+                                  null,
+                                  user_wallet_id,
+                                  privateKeyBTC,
+                                  addressBTC,
+                                  "BTC",
+                                ];
+                                let litecoinWalletData = [
+                                  null,
+                                  user_wallet_id,
+                                  privateKeyLTC,
+                                  addressLTC,
+                                  "LTC",
+                                ];
+                                let ethWalletData = [
+                                  null,
+                                  user_wallet_id,
+                                  account.privateKey,
+                                  account.address,
+                                  "ETH",
+                                ];
+
+                                conn.query(
+                                  userPrivateWallet,
+                                  [bitcoinWalletData],
+                                  async (err, result, fields) => {
+                                    if (err) {
+                                      console.log("BTC Wallet ERROR", err);
+                                    } else {
+                                      console.log("BTC Wallet CREATE");
+                                    }
+                                  }
+                                );
+                                conn.query(
+                                  userPrivateWallet,
+                                  [litecoinWalletData],
+                                  async (err, result, fields) => {
+                                    if (err) {
+                                      console.log("LTC Wallet ERROR", err);
+                                    } else {
+                                      console.log("LTC Wallet CREATE");
+                                    }
+                                  }
+                                );
+                                conn.query(
+                                  userPrivateWallet,
+                                  [ethWalletData],
+                                  async (err, result, fields) => {
+                                    if (err) {
+                                      console.log("ETH Wallet ERROR", err);
+                                    } else {
+                                      console.log("ETH Wallet CREATE");
+                                    }
+                                  }
+                                );
+
+                                await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                                  chat_id: chatId,
+                                  text: "Please checkout your inbox.We have provided you with all details",
+                                  reply_markup: JSON.stringify(tempKeyBoard),
+                                });
+
+                                await axios
+                                  .post(`${TELEGRAM_API}/sendMessage`, {
+                                    chat_id: user_id,
+                                    text: `Your Verification code is ${otp}\nDon't share it with anyone.\n
+                                                    Bitcoin wallet address - ${addressBTC}\n
+                                                    Ethereum wallet address - ${account.address}\n
+                                                    Litecoin wallet address - ${addressLTC}\n
+                                                    Binance Coin wallet address - ${account.address}\n`,
+                                  })
+                                  .catch(async (err) => {
+                                    console.log("error", err);
+                                    await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                                      chat_id: chatId,
+                                      text: "Server is busy try again...",
+                                    });
+                                  });
+                              }
+                            }
+                          );
                         }
-                      );
-                    }
+                      }
+                    );
                   }
-                );
+                })
               }
             });
           } else if (text == "CONFIRM PAYMENT") {
@@ -5441,16 +6498,18 @@ const init = async () => {
                 ],
               ],
             };
-            let previousBalance 
+            let previousBalance
             let user_id = req.body.callback_query.from.id;
             let user_wallet_id;
             let wallet_id;
             let register_user_id;
+            let PREVIOUSRECORD = await checkPreviousTransaction(user_id)
+
             const userWalletExist = `SELECT register_user.*,user_wallet.*
                     FROM register_user
                     JOIN user_wallet
                     ON register_user.user_wallet_id=user_wallet.id
-                    WHERE register_user.user_id = '${user_id}' AND user_wallet.success = ${0};`;
+                    WHERE register_user.user_id = '${user_id}' AND register_user.success = ${0};`;
 
             conn.query(userWalletExist, async (err, result) => {
               // console.log("result======", result.token)
@@ -5516,10 +6575,10 @@ const init = async () => {
                         // }
                       } else if (res[3].balance && Number(res[3].balance) > 0) {
                         total += Number(res[3].balance) * ethPrice;
-                        console.log(
-                          "SSSSSS",
-                          Number(res[3].balance * ethPrice) > 200
-                        );
+                        console.log("DEDUCTING PREVIOUS BALANCE", Number(res[3].balance));
+                        console.log("DEDUCTING PREVIOUS BALANCE", Number(res[3].balance) * Number(ethPrice));
+                        console.log("DEDUCTING PREVIOUS BALANCE", ethPrice)
+                        console.log("SSSSSS", Number(res[3].balance * ethPrice));
 
                         // if ((Number(res[3].balance * ethPrice)) > 200) {
                         //     createUserWallet(wallet_id, res[3].balance * ethPrice, walletAddress, req.body.message.from.id)
@@ -5533,6 +6592,11 @@ const init = async () => {
                         //         chat_id: chatId,
                         //         text: `Your transaction is successful`
                         //     })
+                      }
+
+                      if (PREVIOUSRECORD != 0) {
+                        console.log("DEDUCTING PREVIOUS BALANCE", PREVIOUSRECORD)
+                        total -= Number(PREVIOUSRECORD)
                       }
 
                       if (total >= 5000) {
@@ -5566,14 +6630,28 @@ const init = async () => {
                             }
                           }
                         );
+                        // update register_user with approved Balance
+                        let updateWalletBronzeGroup = `UPDATE register_user SET approvedBalance ="${total}" WHERE id = ${register_user_id}`;
+                        conn.query(
+                          updateWalletBronzeGroup,
+                          async (err, result, fields) => {
+                            if (err) {
+                              console.log("ERROADasdasd==========");
+                            } else {
+                              console.log("UPDATE CONFIRM");
+                            }
+                          }
+                        );
                         //create group_info with registered_user_id
                         let groupInfoQuery =
-                          "INSERT INTO group_info (id, groupName,groupId,register_user_id) VALUES (?);";
+                          "INSERT INTO group_info (id, groupName,groupId,register_user_id,groupLevel,user_wallet_id) VALUES (?);";
                         let groupInfoData = [
                           null,
                           PlatinumGroup.name,
                           PlatinumGroup.id,
                           register_user_id,
+                          5,
+                          user_wallet_id
                         ];
                         conn.query(
                           groupInfoQuery,
@@ -5650,14 +6728,28 @@ const init = async () => {
                             }
                           }
                         );
+                        // update register_user with approved Balance
+                        let updateWalletBronzeGroup = `UPDATE register_user SET approvedBalance ="${total}" WHERE id = ${register_user_id}`;
+                        conn.query(
+                          updateWalletBronzeGroup,
+                          async (err, result, fields) => {
+                            if (err) {
+                              console.log("ERROADasdasd==========");
+                            } else {
+                              console.log("UPDATE CONFIRM");
+                            }
+                          }
+                        );
                         //create group_info with registered_user_id
                         let groupInfoQuery =
-                          "INSERT INTO group_info (id, groupName,groupId,register_user_id) VALUES (?);";
+                          "INSERT INTO group_info (id, groupName,groupId,register_user_id,groupLevel,user_wallet_id) VALUES (?);";
                         let groupInfoData = [
                           null,
                           GoldGroup.name,
                           GoldGroup.id,
                           register_user_id,
+                          4,
+                          user_wallet_id
                         ];
                         conn.query(
                           groupInfoQuery,
@@ -5734,14 +6826,28 @@ const init = async () => {
                             }
                           }
                         );
+                        // update register_user with approved Balance
+                        let updateWalletBronzeGroup = `UPDATE register_user SET approvedBalance ="${total}" WHERE id = ${register_user_id}`;
+                        conn.query(
+                          updateWalletBronzeGroup,
+                          async (err, result, fields) => {
+                            if (err) {
+                              console.log("ERROADasdasd==========");
+                            } else {
+                              console.log("UPDATE CONFIRM");
+                            }
+                          }
+                        );
                         //create group_info with registered_user_id
                         let groupInfoQuery =
-                          "INSERT INTO group_info (id, groupName,groupId,register_user_id) VALUES (?);";
+                          "INSERT INTO group_info (id, groupName,groupId,register_user_id,groupLevel,user_wallet_id) VALUES (?);";
                         let groupInfoData = [
                           null,
                           TitaniumGroup.name,
                           TitaniumGroup.id,
                           register_user_id,
+                          3,
+                          user_wallet_id
                         ];
                         conn.query(
                           groupInfoQuery,
@@ -5818,82 +6924,10 @@ const init = async () => {
                             }
                           }
                         );
-                        //create group_info with registered_user_id
-                        let groupInfoQuery =
-                          "INSERT INTO group_info (id, groupName,groupId,register_user_id) VALUES (?);";
-                        let groupInfoData = [
-                          null,
-                          SilverGroup.name,
-                          SilverGroup.id,
-                          register_user_id,
-                        ];
+                        // update register_user with approved Balance
+                        let updateWalletBronzeGroup = `UPDATE register_user SET approvedBalance ="${total}" WHERE id = ${register_user_id}`;
                         conn.query(
-                          groupInfoQuery,
-                          [groupInfoData],
-                          async (err, result, fields) => {
-                            if (err) {
-                              console.log("err 2", err);
-                              await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                                chat_id: chatId,
-                                text: `Server busy try again later...`,
-                              });
-                            } else {
-                              await getUserWalletDetails(user_wallet_id)
-                                .then(async (res) => {
-                                  await axios.post(
-                                    `${TELEGRAM_API}/sendMessage`,
-                                    {
-                                      chat_id: req.body.callback_query.from.id,
-                                      text: `Transaction was successfull\nYour wallet address is ${res[0].walletAddress}\nDon't share it with anyone.\nJoin here ${SilverGroup.link} and claim your token and see gift-box status`,
-                                    }
-                                  );
-
-                                  await axios.post(
-                                    `${TELEGRAM_API}/sendMessage`,
-                                    {
-                                      chat_id: chatId,
-                                      text: backToHomeText,
-                                      reply_markup: JSON.stringify(tempKeyBoard1),
-                                    }
-                                  );
-                                })
-                                .catch(async (er) => {
-                                  console.log("CONFRIM PAYMENT ERROR ", er);
-                                  await axios.post(
-                                    `${TELEGRAM_API}/sendMessage`,
-                                    {
-                                      chat_id: chatId,
-                                      text: `Server busy try again later...`,
-                                    }
-                                  );
-                                });
-                            }
-                          }
-                        );
-                      }
-                      else if (total >= 100) {
-                        console.log("TOTAL", total);
-                        // let userAccountAddress
-                        // createUserWallet(wallet_id, res[3].balance * ethPrice, walletAddress, req.body.message.from.id)
-                        //     .then(async (res) => {
-                        //         console.log("resasdasd", res)
-                        //         userAccountAddress = res.accountPublicAddress
-                        //         register_user_id = res.register_user_id
-                        //     }).catch(async (err) => {
-                        //         console.log("errror", err)
-                        //         await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                        //             chat_id: chatId,
-                        //             text: `Server busy try again later...`
-                        //         })
-                        //     })
-                        await axios.post(`${TELEGRAM_API}/sendMessage`, {
-                          chat_id: chatId,
-                          text: `Your transaction is successfull\nCheck your inbox.`,
-                        });
-                        //update the sucess with corresponding otp
-                        let updateWalletInfo = `UPDATE user_wallet SET success ="${1}" WHERE id = ${user_wallet_id}`;
-                        conn.query(
-                          updateWalletInfo,
+                          updateWalletBronzeGroup,
                           async (err, result, fields) => {
                             if (err) {
                               console.log("ERROADasdasd==========");
@@ -5904,12 +6938,14 @@ const init = async () => {
                         );
                         //create group_info with registered_user_id
                         let groupInfoQuery =
-                          "INSERT INTO group_info (id, groupName,groupId,register_user_id) VALUES (?);";
+                          "INSERT INTO group_info (id, groupName,groupId,register_user_id,groupLevel,user_wallet_id) VALUES (?);";
                         let groupInfoData = [
                           null,
                           BronzeGroup.name,
                           BronzeGroup.id,
                           register_user_id,
+                          2,
+                          user_wallet_id
                         ];
                         conn.query(
                           groupInfoQuery,
@@ -5955,9 +6991,95 @@ const init = async () => {
                           }
                         );
                       }
+                      else if (total >= 100) {
+                        console.log("TOTAL", total);
+                        // let userAccountAddress
+                        // createUserWallet(wallet_id, res[3].balance * ethPrice, walletAddress, req.body.message.from.id)
+                        //     .then(async (res) => {
+                        //         console.log("resasdasd", res)
+                        //         userAccountAddress = res.accountPublicAddress
+                        //         register_user_id = res.register_user_id
+                        //     }).catch(async (err) => {
+                        //         console.log("errror", err)
+                        //         await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        //             chat_id: chatId,
+                        //             text: `Server busy try again later...`
+                        //         })
+                        //     })
+                        await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                          chat_id: chatId,
+                          text: `Your transaction is successfull\nCheck your inbox.`,
+                        });
+                        // update register_user with approved Balance
+                        let updateWalletInfo = `UPDATE register_user SET approvedBalance ="${total}" WHERE id = ${register_user_id}`;
+                        conn.query(
+                          updateWalletInfo,
+                          async (err, result, fields) => {
+                            if (err) {
+                              console.log("ERROADasdasd==========");
+                            } else {
+                              console.log("UPDATE CONFIRM");
+                            }
+                          }
+                        );
+                        //create group_info with registered_user_id
+                        let groupInfoQuery =
+                          "INSERT INTO group_info (id, groupName,groupId,register_user_id,groupLevel,user_wallet_id) VALUES (?);";
+                        let groupInfoData = [
+                          null,
+                          SilverGroup.name,
+                          SilverGroup.id,
+                          register_user_id,
+                          1,
+                          user_wallet_id
+                        ];
+                        conn.query(
+                          groupInfoQuery,
+                          [groupInfoData],
+                          async (err, result, fields) => {
+                            if (err) {
+                              console.log("err 2", err);
+                              await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                                chat_id: chatId,
+                                text: `Server busy try again later...`,
+                              });
+                            } else {
+                              await getUserWalletDetails(user_wallet_id)
+                                .then(async (res) => {
+                                  await axios.post(
+                                    `${TELEGRAM_API}/sendMessage`,
+                                    {
+                                      chat_id: req.body.callback_query.from.id,
+                                      text: `Transaction was successfull\nYour wallet address is ${res[0].walletAddress}\nDon't share it with anyone.\nJoin here ${SilverGroup.link} and claim your token and see gift-box status`,
+                                    }
+                                  );
+
+                                  await axios.post(
+                                    `${TELEGRAM_API}/sendMessage`,
+                                    {
+                                      chat_id: chatId,
+                                      text: backToHomeText,
+                                      reply_markup: JSON.stringify(tempKeyBoard1),
+                                    }
+                                  );
+                                })
+                                .catch(async (er) => {
+                                  console.log("CONFRIM PAYMENT ERROR ", er);
+                                  await axios.post(
+                                    `${TELEGRAM_API}/sendMessage`,
+                                    {
+                                      chat_id: chatId,
+                                      text: `Server busy try again later...`,
+                                    }
+                                  );
+                                });
+                            }
+                          }
+                        );
+                      }
                       else {
 
-                        console.log(" I AM HERE PLEASE RECHECK",total)
+                        console.log(" I AM HERE PLEASE RECHECK", total)
 
                         await axios.post(`${TELEGRAM_API}/sendMessage`, {
                           chat_id: chatId,
@@ -5980,11 +7102,13 @@ const init = async () => {
                     });
                   });
               } else {
+                console.log(" I AM NOT SUPPSE TO HERE========")
+
                 let reCheckSuccessQuery = `SELECT register_user.*,user_wallet.*
                             FROM register_user
                             JOIN user_wallet
                             ON register_user.user_wallet_id=user_wallet.id
-                            WHERE register_user.user_id = '${user_id}' AND user_wallet.success = ${1};`;
+                            WHERE register_user.user_id = '${user_id}' AND register_user.success = ${1};`;
 
                 await new Promise((resolve, reject) => {
                   conn.query(reCheckSuccessQuery, async (err, result) => {
@@ -6346,7 +7470,7 @@ const init = async () => {
             await publicGroupUserDetails(userId).then((res) => {
 
               console.log(" PUBLIC WALLET CHECK", res)
-              if(res.length > 0){
+              if (res.length > 0) {
                 tempMyWallet = res[0].toWalletAddress;
               }
             });
@@ -6584,7 +7708,7 @@ const init = async () => {
             });
           } else if (giftBoxChannel == true) {
             giftBoxChannel = false
-           
+
             await axios
               .post(`${TELEGRAM_API}/sendMessage`, {
                 chat_id: req.body.message.chat.id,
@@ -6594,7 +7718,19 @@ const init = async () => {
               .catch((err) => {
                 console.log("IDKKKK", err);
               });
-          } else {
+          }
+          else if (isServerError == true) {
+            isServerError = false
+            await axios
+              .post(`${TELEGRAM_API}/sendMessage`, {
+                chat_id: req.body.message.chat.id,
+                text: 'SERVER ERROR. Try Again Later',
+              })
+              .catch((err) => {
+                console.log("IDKKKK", err);
+              });
+          }
+          else {
             console.log("FINAL ELSE");
             initialTest =
               "Available comamnd  \n" +
