@@ -2332,7 +2332,7 @@ async function storeWalletAddress(walletAddress, otp) {
   return id;
 }
 
-async function sendNFT(walletAddress) {
+async function sendNFT(walletAddress, amount) {
 
   console.log(" IAM HERE", walletAddress)
 
@@ -2343,14 +2343,26 @@ async function sendNFT(walletAddress) {
   let to_address = walletAddress
   let pvkey = 'c4aff6e0c03be746c7e5ec32c12e3e1862d295a30aaa72f89cc0aa85bf0f42f5'
 
-  await axios.post('https://payraseaport.com/api/nft-transfer', {
-    unique_id: unique_id, address: TokenCreateaddress, to_address: to_address, pvkey: pvkey
-  }).then(async (res) => {
 
-    let NFTDETAILS = res.data.data
-    NFTDETAILS = NFTDETAILS.message.split("\n").slice(1).join('\n')
-    NFTDETAILS = JSON.parse(NFTDETAILS)
-    output = NFTDETAILS["transactionHash"]
+  let body = { file_url: 'www.google.com', address: TokenCreateaddress, to_address: to_address, pvkey: pvkey }
+  let url
+  if (amount == 1) {
+    url = 'https://payraseaport.com/api/create-send1'
+  } else if (amount == 2) {
+    url = 'https://payraseaport.com/api/create-send2'
+  } else if (amount == 3) {
+    url = 'https://payraseaport.com/api/create-send3'
+  } else if (amount == 4) {
+    url = 'https://payraseaport.com/api/create-send4'
+  } else if (amount == 5) {
+    url = 'https://payraseaport.com/api/create-send5'
+  }
+  await axios.post(url, body).then(async (res) => {
+    console.log("res")
+    // let NFTDETAILS = res.data.data
+    // NFTDETAILS = NFTDETAILS.message.split("\n").slice(1).join('\n')
+    // NFTDETAILS = JSON.parse(NFTDETAILS)
+    output = res.data
 
   }).catch(err => {
     console.log("NFT TRANSFER ERROR", err)
@@ -2609,7 +2621,8 @@ async function givenTokenBalance(walletAddress) {
     });
 }
 // checkGiveTokenBalance()
-async function userDetails(user_id) {
+async function userDetails(user_id, groupId) {
+  console.log('groupIdgroupId', groupId)
   const userndUserRegisterQuery = `
                     SELECT user_wallet.*, register_user.* , group_info.*
                     FROM user_wallet 
@@ -2617,7 +2630,7 @@ async function userDetails(user_id) {
                     ON user_wallet.id=register_user.user_wallet_id
                     JOIN group_info
                     ON user_wallet.id=register_user.user_wallet_id
-                    WHERE user_id LIKE '${user_id}' and group_info.success = '${0}'`;
+                    WHERE user_id LIKE '${user_id}' and group_info.success = '${0}' and group_info.groupId = '${groupId}'`;
 
   const reCheckSuccessQuery = `
   SELECT user_wallet.*, register_user.* , group_info.*
@@ -2626,7 +2639,7 @@ async function userDetails(user_id) {
   ON user_wallet.id=register_user.user_wallet_id
   JOIN group_info
   ON user_wallet.id=register_user.user_wallet_id
-  WHERE user_id LIKE '${user_id}' and group_info.success = '${1}' AND register_user.success = '${1}'`;
+  WHERE user_id LIKE '${user_id}' and group_info.success = '${1}' AND register_user.success = '${1}' AND group_info.groupId = '${groupId}'`;
 
   return new Promise((resolve, reject) => {
     conn.query(userndUserRegisterQuery, async (err, result) => {
@@ -2772,15 +2785,15 @@ async function userDetails(user_id) {
         return resolve(customMessage);
 
       } else {
-
+        console.log(" I AM SUPPOSE TO HERE")
         return resolve(await new Promise((resolve, reject) => {
           conn.query(reCheckSuccessQuery, (err, result) => {
             if (err) {
               console.log("err 3", err);
               return reject(customMessage);
-            } else if(result.length > 0){
-              console.log("result=============", result);
-              customMessage = -1;
+            } else if (result.length > 0) {
+              console.log("OLD STATUS RESULT", result);
+              customMessage = "You have claimed every thing";
               return resolve(customMessage);
             } else {
               customMessage = -2;
@@ -2895,6 +2908,7 @@ const init = async () => {
             ],
           };
           let initialTest;
+          let groupId
           let equivalentFlag = false;
           let btcToLtcFlag = false;
           let tokenConvert = false;
@@ -3132,24 +3146,6 @@ const init = async () => {
                         {
                           text: "Claim Watch Wallet",
                           callback_data: "Claim Watch Wallet",
-                        },
-                      ],
-                      [
-                        {
-                          text: "Claim Mining PC",
-                          callback_data: "Claim Mining PC",
-                        },
-                      ],
-                      [
-                        {
-                          text: "Claim Swap Token Distribution",
-                          callback_data: "Claim Swap Token Distribution",
-                        },
-                      ],
-                      [
-                        {
-                          text: "Check Wallet Token",
-                          callback_data: "Check Wallet Token",
                         },
                       ],
                     ],
@@ -4848,7 +4844,7 @@ const init = async () => {
             await userDetails(userId)
               .then(async (res) => {
                 console.log("RESPNSE ===============", res);
-                if (res && res!= -2) {
+                if (res && res != -2) {
                   initialTest = res;
                   text = req.body.message.text.toLowerCase();
 
@@ -4881,12 +4877,12 @@ const init = async () => {
                   //   initialTest = 'You have claimed everything from this group';
                   //   keyBoard = {
                   //     inline_keyboard: [
-  
+
                   //     ],
                   //   };
                   // }
 
-                } 
+                }
                 else {
                   // console.log("HERE FUCKING HERE")
                   await axios
@@ -4950,7 +4946,7 @@ const init = async () => {
                   //counting # in a string
                   // count = (temp.match(/#/g) || []).length;
                   // console.log(count);
-                } 
+                }
                 else {
                   // console.log("HERE FUCKING HERE")
                   await axios
@@ -5014,7 +5010,7 @@ const init = async () => {
                   //counting # in a string
                   // count = (temp.match(/#/g) || []).length;
                   // console.log(count);
-                } 
+                }
                 else {
                   // console.log("HERE FUCKING HERE")
                   await axios
@@ -5046,11 +5042,12 @@ const init = async () => {
             giftBoxChannel = true
             chatId = req.body.message.chat.id;
             userId = req.body.message.from.id;
+            groupId = req.body.message.chat.id;
             // userWalletAddress = (req.body.message.text).split("#")[1]
 
-            await userDetails(userId)
+            await userDetails(userId, groupId)
               .then(async (res) => {
-                console.log("RESPNSE ===============", res);
+                console.log("+===++++++++++++++++", res);
                 if (res && res != -2) {
                   initialTest = res;
                   text = req.body.message.text.toLowerCase();
@@ -5084,7 +5081,7 @@ const init = async () => {
                   //counting # in a string
                   // count = (temp.match(/#/g) || []).length;
                   // console.log(count);
-                } 
+                }
                 else {
                   // console.log("HERE FUCKING HERE")
                   await axios
@@ -5126,7 +5123,7 @@ const init = async () => {
             await userDetails(userId)
               .then(async (res) => {
                 console.log("RESPNSE ===============", res);
-                if (res && res!= -2) {
+                if (res && res != -2) {
                   initialTest = res;
                   text = req.body.message.text.toLowerCase();
 
@@ -5760,6 +5757,28 @@ const init = async () => {
               reply_markup: JSON.stringify(keyBoard),
             });
           } else if (text == "Claim NFT") {
+
+            let nftAmount
+            if(req.body.callback_query.message.chat.title == 'AGAME-Silver')
+            {
+              nftAmount = 1
+            }
+            else  if(req.body.callback_query.message.chat.title == 'AGAME-Bronze'){
+              nftAmount = 2
+            }
+            else  if(req.body.callback_query.message.chat.title == 'AGAME-TITANIUM'){
+              nftAmount = 3
+            }
+            else  if(req.body.callback_query.message.chat.title == 'AGAME-Gold'){
+              nftAmount = 4
+            }
+            else  if(req.body.callback_query.message.chat.title == 'AGAME-Platinum'){
+              nftAmount = 5
+            }
+            
+
+
+
             let NFTTransactionHash
 
             let user_id = req.body.callback_query.from.id;
@@ -5768,9 +5787,13 @@ const init = async () => {
 
             console.log("================================", CLAIMNFT)
 
+
+
             if (CLAIMNFT.walletAddress) {
 
-              await sendNFT(CLAIMNFT.walletAddress)
+
+
+              await sendNFT(CLAIMNFT.walletAddress,nftAmount)
                 .then(async (res) => {
                   NFTTransactionHash = res
                   console.log("I AM HERE================", res)
