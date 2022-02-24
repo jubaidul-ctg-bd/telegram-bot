@@ -12,7 +12,6 @@ const litecore = require("litecore-lib");
 const Web3 = require("web3");
 const ganache = require("ganache-cli");
 const e = require("express");
-const NP = require('number-precision')
 
 
 const app = express();
@@ -89,7 +88,7 @@ async function getXGXBalance(walletAddress) {
 
 async function XGXEQUEVALENTBNB(amount) {
   let xgxToUSD = ParseFloat(amount / 100).toPrecision(6);
-  xgxEQBNB = (xgxToUSD * bnbPrice).toFixed(2)
+  xgxEQBNB = (xgxToUSD / bnbPrice).toFixed(2)
   return xgxEQBNB;
 }
 
