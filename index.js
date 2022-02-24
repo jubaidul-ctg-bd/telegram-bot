@@ -3,6 +3,7 @@ const express = require("express");
 const axios = require("axios");
 const bodyParser = require("body-parser");
 const BNBContractABI = require("./contactsABI/BNBabi.json");
+const XGXContractABI = require("./contactsABI/HuxhTokenABI.json");
 const Fortmatic = require("fortmatic");
 const { getBalance } = require("./myLib/cryptoBalance");
 const bitcore = require("bitcore-lib");
@@ -11,6 +12,9 @@ const litecore = require("litecore-lib");
 const Web3 = require("web3");
 const ganache = require("ganache-cli");
 const e = require("express");
+const NP = require('number-precision')
+
+
 const app = express();
 app.use(bodyParser.json());
 var multer = require("multer");
@@ -29,12 +33,18 @@ const transferBTC = require("./myLib/transbtc");
 const transferLTC = require("./myLib/transltc");
 
 //Storing Some Token Value
+let btcEQXGX;
+let bnbEQXGX;
 let btcEQltc;
 let ltcEQbtc;
+let ltcEQXGX;
 let btcPrice;
 let bnbPrice;
 let ltcPrice;
 let ethPrice;
+let btcEQbnb;
+let bnbEQbtc;
+let xgxEQBNB;
 async function tokenPrice() {
   await axios
     .get(`https://betconix.com/api/v2/tickers`)
@@ -57,10 +67,67 @@ async function tokenPrice() {
 }
 tokenPrice();
 
+async function getXGXBalance(walletAddress) {
+
+  var web3 = new Web3(
+    new Web3.providers.HttpProvider(
+      "https://data-seed-prebsc-1-s1.binance.org:8545"
+    )
+  );
+  let XGXcontractAddress = "0x5ff35d14fdd7743fbcd358f41c9abd1751e32846"
+  const contract = new web3.eth.Contract(XGXContractABI, XGXcontractAddress);
+
+  const result = await contract.methods.balanceOf(walletAddress).call(); // 29803630997051883414242659
+  console.log("result", result)
+  const format = web3.utils.fromWei(result); // 29803630.997051883414242659
+  console.log("formate", format);
+  return format;
+
+}
+
+
+
+async function XGXEQUEVALENTBNB(amount) {
+  let xgxToUSD = ParseFloat(amount / 100).toPrecision(6);
+  xgxEQBNB = (xgxToUSD * bnbPrice).toFixed(2)
+  return xgxEQBNB;
+}
+
+async function BNBEQUEVALENTBTC(amount) {
+  let btcBnb = ParseFloat(amount * bnbPrice).toPrecision(6);
+  bnbEQbtc = (btcBnb / btcPrice).toFixed(2)
+  return bnbEQbtc;
+}
+
+async function BTCEQUEVALENTBNB(amount) {
+  let btcBnb = ParseFloat(amount * btcPrice).toPrecision(6);
+  btcEQbnb = (btcBnb / bnbPrice).toFixed(2)
+  return btcEQbnb;
+}
+
+async function BTCEQUEVALENTXGX(amount) {
+  let btcUSD = ParseFloat(amount * btcPrice).toFixed(2)
+  btcEQXGX = btcUSD * 100
+  return btcEQltc;
+}
+
+async function BNBEQUEVALENTXGX(amount) {
+  let bnb = ParseFloat(amount * bnbPrice).toPrecision(6);
+  bnbEQXGX = (bnb * 100).toFixed(2)
+  return btcEQltc;
+}
+
+
 async function BTCEQUEVALENTLTC(amount) {
   let ltc = ParseFloat(ltcPrice / btcPrice).toPrecision(6);
   btcEQltc = parseFloat((ltc * amount).toPrecision(6));
   return btcEQltc;
+}
+
+async function LTCEQUEVALENTXGX(amount) {
+  let ltcUSD = ParseFloat(amount * ltcPrice).toFixed(2)
+  ltcEQXGX = ltcUSD * 100
+  return ltcEQXGX;
 }
 
 async function LTCEQUEVALENTBTC(amount) {
@@ -1227,7 +1294,62 @@ async function checkBTCBalance(testNet, userId) {
             console.log("ER1");
             output.balance = 0;
           });
-      } else {
+      } else if (output.data[0].fromCurrency == "BNB") {
+        await axios
+          .get(
+            `https://api-testnet.bscscan.com/api?module=account&action=balance&address=${output.data[0].walletAddress}&tag=latest&apikey=XZY87BD71ZVJH47SS8348X3CJK3IXBWV9C`
+          )
+          .then(async (res) => {
+            // await axios.get(`https://betconix.com/api/v2/tickers`)
+            //     .then(result => {
+            //         console.log("result",result.data)
+            //         TokenPrice = result.data.market_data.current_price.usd
+            //     }).catch(er=>{
+            //         console.log("MAIN ERROR====")
+            //     })
+
+            if (res.data.result) {
+              const format = web3.utils.fromWei(res.data.result.toString()); // 29803630.997051883414242659
+              output.balance = format
+
+            } else {
+              console.log("COULD NOT TRACT BNB PRICE")
+              output.balance = 0
+            }
+
+          })
+          .catch((er) => {
+            console.log("ER2", er);
+            output.balance = 0;
+          });
+      } else if (output.data[0].fromCurrency == "ETH") {
+
+        await axios
+          .get(
+            `https://api-rinkeby.etherscan.io/api?module=account&action=balance&address=${output.data[0].walletAddress}&tag=latest&apikey=CDWRF4K5C8NC3YZK7K69MZDSRVXHTFE4WB`
+          )
+          .then(async (res) => {
+            // await axios.get(`https://api.coingecko.com/api/v3/coins/ethereum?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false`)
+            //     .then(result => {
+            //         TokenPrice = result.data.market_data.current_price.usd
+            //     })
+
+            // let balance = {
+            //   // balance: (res.data.total) * 0.00000001,
+            //   // total: res.data.total * 0.00000001,
+            //   // walletAddress: res.data["inputs"][0]["addresses"][0]
+            //   // balance: 0.5,
+            // };
+
+            output.balance = web3.utils.fromWei(res.data.result.toString())
+          })
+          .catch((er) => {
+            console.log("ER4");
+            // console.log("ER", er)
+            output.balance = 0
+          })
+      }
+      else {
         console.log("ERROR WALLET FROM");
         output.balance = 0;
       }
@@ -1333,7 +1455,7 @@ async function checkWalletBalance(user_wallet_id, chatId, testnet) {
       .catch((er) => {
         console.log("ER3");
         return null;
-      });
+      })
 
     const promise4 = await axios
       .get(
@@ -1359,7 +1481,7 @@ async function checkWalletBalance(user_wallet_id, chatId, testnet) {
         console.log("ER4");
         // console.log("ER", er)
         return null;
-      });
+      })
     await Promise.all([promise1, promise2, promise3, promise4])
       .then((values) => {
         TransDetails = values;
@@ -2057,7 +2179,7 @@ async function testAPI() {
 async function testTransferBnB() {
   transferBnB();
 }
-testAPI()
+// testAPI()
 //test BNB token send
 // sendTestBnb("0x964A6E4cBbbC5341d19F408ED90CD3fa35E1602D")
 
@@ -2088,15 +2210,63 @@ async function sendXGXToken(walletAddress, amount) {
   return customOutput
 }
 
-async function sendXGXTokenForNFT(walletAddress, amount, userPrivateKey) {
+async function sendBNBToken(walletAddress, amount) {
+  let customOutput = null
+
+  let fromaddrress = "0x59b485Ed77D692F788bA3F417dB79CBa00A1Bc0B"
+  let privateKey = "c4aff6e0c03be746c7e5ec32c12e3e1862d295a30aaa72f89cc0aa85bf0f42f5"
+
+
+  await axios
+    .post(`https://payraseaport.com/api/transfer`, {
+      tokenamount: String(amount),
+      toAddress: walletAddress,
+      fromAddress: fromaddrress,
+      privateKey: privateKey,
+    })
+    .then(async (res) => {
+      if (res.data.error == false) {
+        customOutput = res.data.data.txnID
+      }
+      return customOutput
+    })
+    .catch((er) => {
+      console.log("ER1", er);
+      return customOutput
+    });
+
+  return customOutput
+}
+
+async function sendXGXTokenForNFT(walletAddress, amount, userPrivateKey, nftAmount) {
   let unique_id = Math.floor((Math.random() * 1000000000000000) + 1)
   let address = '0x59b485Ed77D692F788bA3F417dB79CBa00A1Bc0B'
   let to_address = walletAddress
   let userSecretKey = userPrivateKey.substr(2)
   let pvkey = 'c4aff6e0c03be746c7e5ec32c12e3e1862d295a30aaa72f89cc0aa85bf0f42f5'
+  let url
+  if (nftAmount == 1) {
+    url = 'https://payraseaport.com/api/create-send1'
+  } else if (nftAmount == 2) {
+    url = 'https://payraseaport.com/api/create-send2'
+  } else if (nftAmount == 3) {
+    url = 'https://payraseaport.com/api/create-send3'
+  } else if (nftAmount == 4) {
+    url = 'https://payraseaport.com/api/create-send4'
+  } else if (nftAmount == 5) {
+    url = 'https://payraseaport.com/api/create-send5'
+  }
+  let body = { file_url: 'www.google.com', address: address, to_address: to_address, pvkey: pvkey }
+
+
+
   let customOutput = {
     XGXTRX: null,
-    NFTTRX: null,
+    NFTTRX1: null,
+    NFTTRX2: null,
+    NFTTRX3: null,
+    NFTTRX4: null,
+    NFTTRX5: null,
     XGXSENDTRX: null
   }
   await axios
@@ -2112,21 +2282,39 @@ async function sendXGXTokenForNFT(walletAddress, amount, userPrivateKey) {
         console.log("XGXTRX", res.data.data.txId);
         customOutput.XGXTRX = res.data.data.txId
       }
-      await axios.post('https://payraseaport.com/api/nft-transfer', {
-        unique_id: unique_id, address: address, to_address: to_address, pvkey: pvkey
-      }).then(async (res) => {
-        // console.log("NFTTRX====",(res.data.data));
-        let NFTDETAILS = res.data.data
-        NFTDETAILS = NFTDETAILS.message.split("\n").slice(1).join('\n')
-        NFTDETAILS = JSON.parse(NFTDETAILS)
-        console.log("ASDASDASD", NFTDETAILS["transactionHash"])
-        customOutput.NFTTRX = NFTDETAILS["transactionHash"]
+      await axios.post(url, body
+      ).then(async (res) => {
+        console.log("RES=====", res.data)
+
+        if (nftAmount == 1) {
+          customOutput.NFTTRX1 = res.data.data.first
+        } else if (nftAmount == 2) {
+          customOutput.NFTTRX1 = res.data.data.first
+          customOutput.NFTTRX1 = res.data.data.second
+        } else if (nftAmount == 3) {
+          customOutput.NFTTRX1 = res.data.data.first
+          customOutput.NFTTRX1 = res.data.data.second
+          customOutput.NFTTRX1 = res.data.data.third
+        } else if (nftAmount == 4) {
+          customOutput.NFTTRX1 = res.data.data.first
+          customOutput.NFTTRX1 = res.data.data.second
+          customOutput.NFTTRX1 = res.data.data.third
+          customOutput.NFTTRX1 = res.data.data.forth
+        } else if (nftAmount == 5) {
+          customOutput.NFTTRX1 = res.data.data.first
+          customOutput.NFTTRX1 = res.data.data.second
+          customOutput.NFTTRX1 = res.data.data.third
+          customOutput.NFTTRX1 = res.data.data.forth
+          customOutput.NFTTRX1 = res.data.data.fifth
+        }
         await axios.post('https://payraseaport.com/api/send_token', {
           tokenamount: String(amount),
-          toAddress: walletAddress,
+          toAddress: address,
           fromAddress: walletAddress,
           privateKey: userSecretKey
         }).then(res => {
+          console.log("TOKEN SEND BACK", res.data)
+
           customOutput.XGXSENDTRX = res.data.data.txId
 
           console.log("customOutputcustomOutput", customOutput)
@@ -2867,6 +3055,9 @@ async function checkPreviousTransaction(user_id) {
 
 }
 
+
+
+
 let signalData = ``;
 async function assign(key, value) {
   signalData += `\n${key} : ${value}`;
@@ -2937,6 +3128,7 @@ const init = async () => {
           let tradingViewSignal = 0;
           let secret_groupId = -695063140;
           let currentGroupId
+          let unknownCommand = false
 
           let PlatinumGroup = { id: '-615491856', name: 'AGAME-Platinum', link: 'https://t.me/+vBlsqUqsOIsxYTI1' }
           let GoldGroup = { id: '-463538098', name: 'AGAME-Gold', link: 'https://t.me/+UDww4gKWPL5jOTA1' }
@@ -3525,7 +3717,107 @@ const init = async () => {
                         ],
                       ],
                     };
-                  } else if (res.balance == 0) {
+                  }
+                  else if (res.data[0].fromCurrency == "XGX" && res.data[0].toCurrency == "BNB") {
+                    // let XGXamount = await getXGXBalance(res.data[0].toWalletAddress)
+                    let tempXGX
+
+                    // get the XGX amount
+                    tempXGX = await getXGXBalance(res.balance)
+                    //convert XGX into BNB
+                    tempBlNC = await XGXEQUEVALENTBNB(tempXGX)
+                    console.log("tempBlNC", tempBlNC)
+                    if (tempBlNC > 0) {
+                      await sendBNBToken(
+                        res.data[0].toWalletAddress,
+                        tempBlNC
+                      )
+                        .then((res) => {
+                          if (res) {
+                            console.log("BNB TRNASGFAER", res)
+                            let updateQuery = `UPDATE public_group_user SET status ="${1}" WHERE userId = '${userId}'`;
+                            conn.query(updateQuery, async (err, result) => { });
+
+                            text = req.body.callback_query.data;
+                            initialTest =
+                              `${tempXGX} XGX Equivalent BNB has been sended into your wallet\n\n` +
+                              `Check details from the transactionId ${res}\n\n` +
+                              "Available comamnd  \n" +
+                              "/all - show all available commands \n" +
+                              "/connect - connect to metaMask Wallet \n";
+                            keyBoard = {
+                              inline_keyboard: [
+                                [
+                                  {
+                                    text: "MAIN MENU",
+                                    callback_data: "MAIN MENU",
+                                  },
+                                ],
+                              ],
+                            };
+                          } else {
+                            text = req.body.callback_query.data;
+                            initialTest =
+                              `Something wrong contract with the group admin\n\n` +
+                              "Available comamnd  \n" +
+                              "/all - show all available commands \n" +
+                              "/connect - connect to metaMask Wallet \n";
+                            keyBoard = {
+                              inline_keyboard: [
+                                [
+                                  {
+                                    text: "MAIN MENU",
+                                    callback_data: "MAIN MENU",
+                                  },
+                                ],
+                              ],
+                            };
+                          }
+                        })
+                        .catch((err) => {
+                          text = req.body.callback_query.data;
+                          initialTest =
+                            `Something wrong contract with the group admin\n\n` +
+                            "Available comamnd  \n" +
+                            "/all - show all available commands \n" +
+                            "/connect - connect to metaMask Wallet \n";
+                          keyBoard = {
+                            inline_keyboard: [
+                              [
+                                {
+                                  text: "MAIN MENU",
+                                  callback_data: "MAIN MENU",
+                                },
+                              ],
+                            ],
+                          };
+
+                          console.log("ERROR+++", err);
+                        });
+                    } else {
+                      text = req.body.callback_query.data;
+                      initialTest =
+                        `You don't have enough XGX for this conversion\n\n` +
+                        "Available comamnd  \n" +
+                        "/all - show all available commands \n" +
+                        "/connect - connect to metaMask Wallet \n";
+                      keyBoard = {
+                        inline_keyboard: [
+                          [
+                            {
+                              text: "MAIN MENU",
+                              callback_data: "MAIN MENU",
+                            },
+                          ],
+                        ],
+                      };
+
+                    }
+
+
+                    console.log("Wallet Balance")
+                  }
+                  else if (res.balance == 0) {
                     text = req.body.callback_query.data;
                     initialTest =
                       `Current account balance is ${res.balance} BTC please send the amount that you want to convert into LTC\n\n` +
@@ -3544,82 +3836,307 @@ const init = async () => {
                     };
                   } else {
                     // console.log("checkBTCBalance",res)
-                    if (res.data[0].fromCurrency == "LTC") {
+                    if (res.data[0].fromCurrency == "LTC" && res.data[0].toCurrency == "BTC") {
+                      // axios.post(`${TELEGRAM_API}/sendMessage`, {
+                      //   chat_id: chatId,
+                      //   text: `LTC SENDED`,
+                      // })
+                      tempBlNC = await LTCEQUEVALENTBTC(res.balance);
+                      transferBTC
+                        .send(
+                          "19x2TCT494sxvJVGXNwzvqZdjRCi9NJBcG",
+                          "c1ac5795b58070494719940a96180d4453c87294a1f28836223018fde4eec79e",
+                          res.data[0].toWalletAddress,
+                          tempBlNC,
+                          0
+                        )
+                        .then((res) => {
+                          if (res.txId) {
+                            let updateQuery = `UPDATE public_group_user SET status ="${1}" WHERE userId = '${userId}'`;
+                            conn.query(updateQuery, async (err, result) => { });
+
+                            text = req.body.callback_query.data;
+                            initialTest =
+                              `${tempBlNC} BTC Equivalent LTC has been sended into your wallet\n\n` +
+                              `Check details from the transactionId ${res.txId}\n\n` +
+                              "Available comamnd  \n" +
+                              "/all - show all available commands \n" +
+                              "/connect - connect to metaMask Wallet \n";
+                            keyBoard = {
+                              inline_keyboard: [
+                                [
+                                  {
+                                    text: "MAIN MENU",
+                                    callback_data: "MAIN MENU",
+                                  },
+                                ],
+                              ],
+                            };
+                          } else {
+                            text = req.body.callback_query.data;
+                            initialTest =
+                              `Something wrong contract with the group admin\n\n` +
+                              "Available comamnd  \n" +
+                              "/all - show all available commands \n" +
+                              "/connect - connect to metaMask Wallet \n";
+                            keyBoard = {
+                              inline_keyboard: [
+                                [
+                                  {
+                                    text: "MAIN MENU",
+                                    callback_data: "MAIN MENU",
+                                  },
+                                ],
+                              ],
+                            };
+                          }
+                        })
+                        .catch((err) => {
+                          text = req.body.callback_query.data;
+                          initialTest =
+                            `Something wrong contract with the group admin\n\n` +
+                            "Available comamnd  \n" +
+                            "/all - show all available commands \n" +
+                            "/connect - connect to metaMask Wallet \n";
+                          keyBoard = {
+                            inline_keyboard: [
+                              [
+                                {
+                                  text: "MAIN MENU",
+                                  callback_data: "MAIN MENU",
+                                },
+                              ],
+                            ],
+                          };
+
+                          console.log("ERROR+++", err);
+                        });
+                    } else if (res.data[0].fromCurrency == "BTC" && res.data[0].toCurrency == "LTC") {
                       axios.post(`${TELEGRAM_API}/sendMessage`, {
                         chat_id: chatId,
-                        text: `LTC SENDED`,
+                        text: `BTC SENDED`,
                       })
-                      // tempBlNC = await LTCEQUEVALENTBTC(res.balance);
-                      // transferBTC
-                      //   .send(
-                      //     "19x2TCT494sxvJVGXNwzvqZdjRCi9NJBcG",
-                      //     "c1ac5795b58070494719940a96180d4453c87294a1f28836223018fde4eec79e",
-                      //     res.data[0].toWalletAddress,
-                      //     tempBlNC,
-                      //     0
-                      //   )
-                      //   .then((res) => {
-                      //     if (res.txId) {
-                      //       let updateQuery = `UPDATE public_group_user SET status ="${1}" WHERE userId = '${userId}'`;
-                      //       conn.query(updateQuery, async (err, result) => { });
+                      tempBlNC = await BTCEQUEVALENTLTC(res.balance);
+                      transferLTC
+                        .send(
+                          "LXu1ALV3af3PbySCJEVHqQKU65Ggg4WCJJ",
+                          "1254c04b73279a21633a18d84fafc19fefbff72406d29ab389698b42b119c607",
+                          res.data[0].toWalletAddress,
+                          tempBlNC,
+                          0
+                        )
+                        .then((res) => {
+                          if (res.txId) {
+                            let updateQuery = `UPDATE public_group_user SET status ="${1}" WHERE userId = '${userId}'`;
+                            conn.query(updateQuery, async (err, result) => { });
 
-                      //       text = req.body.callback_query.data;
-                      //       initialTest =
-                      //         `${tempBlNC} BTC Equivalent LTC has been sended into your wallet\n\n` +
-                      //         `Check details from the transactionId ${res.txId}\n\n` +
-                      //         "Available comamnd  \n" +
-                      //         "/all - show all available commands \n" +
-                      //         "/connect - connect to metaMask Wallet \n";
-                      //       keyBoard = {
-                      //         inline_keyboard: [
-                      //           [
-                      //             {
-                      //               text: "MAIN MENU",
-                      //               callback_data: "MAIN MENU",
-                      //             },
-                      //           ],
-                      //         ],
-                      //       };
-                      //     } else {
-                      //       text = req.body.callback_query.data;
-                      //       initialTest =
-                      //         `Something wrong contract with the group admin\n\n` +
-                      //         "Available comamnd  \n" +
-                      //         "/all - show all available commands \n" +
-                      //         "/connect - connect to metaMask Wallet \n";
-                      //       keyBoard = {
-                      //         inline_keyboard: [
-                      //           [
-                      //             {
-                      //               text: "MAIN MENU",
-                      //               callback_data: "MAIN MENU",
-                      //             },
-                      //           ],
-                      //         ],
-                      //       };
-                      //     }
-                      //   })
-                      //   .catch((err) => {
-                      //     text = req.body.callback_query.data;
-                      //     initialTest =
-                      //       `Something wrong contract with the group admin\n\n` +
-                      //       "Available comamnd  \n" +
-                      //       "/all - show all available commands \n" +
-                      //       "/connect - connect to metaMask Wallet \n";
-                      //     keyBoard = {
-                      //       inline_keyboard: [
-                      //         [
-                      //           {
-                      //             text: "MAIN MENU",
-                      //             callback_data: "MAIN MENU",
-                      //           },
-                      //         ],
-                      //       ],
-                      //     };
+                            text = req.body.callback_query.data;
+                            initialTest =
+                              `${tempBlNC} LTC Equivalent BTC has been sended into your wallet\n\n` +
+                              `Check details from the transactionId ${res.txId}\n\n` +
+                              "Available comamnd  \n" +
+                              "/all - show all available commands \n" +
+                              "/connect - connect to metaMask Wallet \n";
+                            keyBoard = {
+                              inline_keyboard: [
+                                [
+                                  {
+                                    text: "MAIN MENU",
+                                    callback_data: "MAIN MENU",
+                                  },
+                                ],
+                              ],
+                            };
+                          } else {
+                            text = req.body.callback_query.data;
+                            initialTest =
+                              `Something wrong contract with the group admin\n\n` +
+                              "Available comamnd  \n" +
+                              "/all - show all available commands \n" +
+                              "/connect - connect to metaMask Wallet \n";
+                            keyBoard = {
+                              inline_keyboard: [
+                                [
+                                  {
+                                    text: "MAIN MENU",
+                                    callback_data: "MAIN MENU",
+                                  },
+                                ],
+                              ],
+                            };
+                          }
+                        })
+                        .catch((err) => {
+                          text = req.body.callback_query.data;
+                          initialTest =
+                            `Something wrong contract with the group admin\n\n` +
+                            "Available comamnd  \n" +
+                            "/all - show all available commands \n" +
+                            "/connect - connect to metaMask Wallet \n";
+                          keyBoard = {
+                            inline_keyboard: [
+                              [
+                                {
+                                  text: "MAIN MENU",
+                                  callback_data: "MAIN MENU",
+                                },
+                              ],
+                            ],
+                          };
 
-                      //     console.log("ERROR+++", err);
-                      //   });
-                    } else if (res.data[0].fromCurrency == "BTC") {
+                          console.log("ERROR+++", err);
+                        });
+                    } else if (res.data[0].fromCurrency == "BTC" && res.data[0].toCurrency == "XGX") {
+                      // axios.post(`${TELEGRAM_API}/sendMessage`, {
+                      //   chat_id: chatId,
+                      //   text: `BTC SENDED`,
+                      // })
+
+
+                      let tempBTCBLNC = res.balance
+                      tempBlNC = await BTCEQUEVALENTXGX(tempBTCBLNC);
+                      await sendXGXToken(
+                        res.data[0].toWalletAddress,
+                        tempBlNC,
+                      )
+                        .then((res) => {
+                          if (res) {
+                            let updateQuery = `UPDATE public_group_user SET status ="${1}" WHERE userId = '${userId}'`;
+                            conn.query(updateQuery, async (err, result) => { });
+
+                            text = req.body.callback_query.data;
+                            initialTest =
+                              `${tempBTCBLNC} BTC Equivalent XGX has been sended into your wallet\n\n` +
+                              `Check details from the transactionId ${res}\n\n` +
+                              "Available comamnd  \n" +
+                              "/all - show all available commands \n" +
+                              "/connect - connect to metaMask Wallet \n";
+                            keyBoard = {
+                              inline_keyboard: [
+                                [
+                                  {
+                                    text: "MAIN MENU",
+                                    callback_data: "MAIN MENU",
+                                  },
+                                ],
+                              ],
+                            };
+
+
+                          } else {
+                            text = req.body.callback_query.data;
+                            initialTest =
+                              `Something wrong contract with the group admin\n\n` +
+                              "Available comamnd  \n" +
+                              "/all - show all available commands \n" +
+                              "/connect - connect to metaMask Wallet \n";
+                            keyBoard = {
+                              inline_keyboard: [
+                                [
+                                  {
+                                    text: "MAIN MENU",
+                                    callback_data: "MAIN MENU",
+                                  },
+                                ],
+                              ],
+                            };
+                          }
+                        })
+                        .catch((err) => {
+                          text = req.body.callback_query.data;
+                          initialTest =
+                            `Something wrong contract with the group admin\n\n` +
+                            "Available comamnd  \n" +
+                            "/all - show all available commands \n" +
+                            "/connect - connect to metaMask Wallet \n";
+                          keyBoard = {
+                            inline_keyboard: [
+                              [
+                                {
+                                  text: "MAIN MENU",
+                                  callback_data: "MAIN MENU",
+                                },
+                              ],
+                            ],
+                          };
+
+                          console.log("ERROR+++", err);
+                        });
+                    } else if (res.data[0].fromCurrency == "LTC" && res.data[0].toCurrency == "XGX") {
+                      axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: `BTC SENDED`,
+                      })
+
+                      let tempLTCBLNC = res.balance
+
+                      tempBlNC = await LTCEQUEVALENTXGX(tempLTCBLNC);
+                      await sendXGXToken(
+                        res.data[0].toWalletAddress,
+                        tempBlNC,
+                      )
+                        .then((res) => {
+                          if (res) {
+                            let updateQuery = `UPDATE public_group_user SET status ="${1}" WHERE userId = '${userId}'`;
+                            conn.query(updateQuery, async (err, result) => { });
+
+                            text = req.body.callback_query.data;
+                            initialTest =
+                              `${tempLTCBLNC} LTC Equivalent XGX has been sended into your wallet\n\n` +
+                              `Check details from the transactionId ${res}\n\n` +
+                              "Available comamnd  \n" +
+                              "/all - show all available commands \n" +
+                              "/connect - connect to metaMask Wallet \n";
+                            keyBoard = {
+                              inline_keyboard: [
+                                [
+                                  {
+                                    text: "MAIN MENU",
+                                    callback_data: "MAIN MENU",
+                                  },
+                                ],
+                              ],
+                            };
+                          } else {
+                            text = req.body.callback_query.data;
+                            initialTest =
+                              `Something wrong contract with the group admin\n\n` +
+                              "Available comamnd  \n" +
+                              "/all - show all available commands \n" +
+                              "/connect - connect to metaMask Wallet \n";
+                            keyBoard = {
+                              inline_keyboard: [
+                                [
+                                  {
+                                    text: "MAIN MENU",
+                                    callback_data: "MAIN MENU",
+                                  },
+                                ],
+                              ],
+                            };
+                          }
+                        })
+                        .catch((err) => {
+                          text = req.body.callback_query.data;
+                          initialTest =
+                            `Something wrong contract with the group admin\n\n` +
+                            "Available comamnd  \n" +
+                            "/all - show all available commands \n" +
+                            "/connect - connect to metaMask Wallet \n";
+                          keyBoard = {
+                            inline_keyboard: [
+                              [
+                                {
+                                  text: "MAIN MENU",
+                                  callback_data: "MAIN MENU",
+                                },
+                              ],
+                            ],
+                          };
+
+                          console.log("ERROR+++", err);
+                        });
+                    } else if (res.data[0].fromCurrency == "XGX" && res.data[0].toCurrency == "BNB") {
                       axios.post(`${TELEGRAM_API}/sendMessage`, {
                         chat_id: chatId,
                         text: `BTC SENDED`,
@@ -3694,6 +4211,158 @@ const init = async () => {
 
                       //     console.log("ERROR+++", err);
                       //   });
+                    } else if (res.data[0].fromCurrency == "BTC" && res.data[0].toCurrency == "BNB") {
+                      // axios.post(`${TELEGRAM_API}/sendMessage`, {
+                      //   chat_id: chatId,
+                      //   text: `BTC SENDED`,
+                      // })
+
+                      let tempBTCBLNC = res.balance
+
+                      tempBlNC = await BTCEQUEVALENTBNB(tempBTCBLNC);
+                      await sendBNBToken(
+                        res.data[0].toWalletAddress,
+                        tempBlNC,
+                      )
+                        .then((res) => {
+                          if (res) {
+                            let updateQuery = `UPDATE public_group_user SET status ="${1}" WHERE userId = '${userId}'`;
+                            conn.query(updateQuery, async (err, result) => { });
+
+                            text = req.body.callback_query.data;
+                            initialTest =
+                              `${tempBTCBLNC} BTC Equivalent BNB has been sended into your wallet\n\n` +
+                              `Check details from the transactionId ${res}\n\n` +
+                              "Available comamnd  \n" +
+                              "/all - show all available commands \n" +
+                              "/connect - connect to metaMask Wallet \n";
+                            keyBoard = {
+                              inline_keyboard: [
+                                [
+                                  {
+                                    text: "MAIN MENU",
+                                    callback_data: "MAIN MENU",
+                                  },
+                                ],
+                              ],
+                            };
+                          } else {
+                            text = req.body.callback_query.data;
+                            initialTest =
+                              `Something wrong contract with the group admin\n\n` +
+                              "Available comamnd  \n" +
+                              "/all - show all available commands \n" +
+                              "/connect - connect to metaMask Wallet \n";
+                            keyBoard = {
+                              inline_keyboard: [
+                                [
+                                  {
+                                    text: "MAIN MENU",
+                                    callback_data: "MAIN MENU",
+                                  },
+                                ],
+                              ],
+                            };
+                          }
+                        })
+                        .catch((err) => {
+                          text = req.body.callback_query.data;
+                          initialTest =
+                            `Something wrong contract with the group admin\n\n` +
+                            "Available comamnd  \n" +
+                            "/all - show all available commands \n" +
+                            "/connect - connect to metaMask Wallet \n";
+                          keyBoard = {
+                            inline_keyboard: [
+                              [
+                                {
+                                  text: "MAIN MENU",
+                                  callback_data: "MAIN MENU",
+                                },
+                              ],
+                            ],
+                          };
+
+                          console.log("ERROR+++", err);
+                        });
+                    } else if (res.data[0].fromCurrency == "BNB" && res.data[0].toCurrency == "BTC") {
+                      // axios.post(`${TELEGRAM_API}/sendMessage`, {
+                      //   chat_id: chatId,
+                      //   text: `BTC SENDED`,
+                      // })
+
+                      let tempBNBBLNC = res.balance
+
+                      tempBlNC = await BNBEQUEVALENTBTC(tempBNBBLNC);
+                      await transferBTC
+                        .send(
+                          "19x2TCT494sxvJVGXNwzvqZdjRCi9NJBcG",
+                          "c1ac5795b58070494719940a96180d4453c87294a1f28836223018fde4eec79e",
+                          res.data[0].toWalletAddress,
+                          tempBlNC,
+                          0
+                        )
+                        .then((res) => {
+                          if (res) {
+                            let updateQuery = `UPDATE public_group_user SET status ="${1}" WHERE userId = '${userId}'`;
+                            conn.query(updateQuery, async (err, result) => { });
+
+                            text = req.body.callback_query.data;
+                            initialTest =
+                              `${tempBNBBLNC} BNB Equivalent BTC has been sended into your wallet\n\n` +
+                              `Check details from the transactionId ${res}\n\n` +
+                              "Available comamnd  \n" +
+                              "/all - show all available commands \n" +
+                              "/connect - connect to metaMask Wallet \n";
+                            keyBoard = {
+                              inline_keyboard: [
+                                [
+                                  {
+                                    text: "MAIN MENU",
+                                    callback_data: "MAIN MENU",
+                                  },
+                                ],
+                              ],
+                            };
+                          } else {
+                            text = req.body.callback_query.data;
+                            initialTest =
+                              `Something wrong contract with the group admin\n\n` +
+                              "Available comamnd  \n" +
+                              "/all - show all available commands \n" +
+                              "/connect - connect to metaMask Wallet \n";
+                            keyBoard = {
+                              inline_keyboard: [
+                                [
+                                  {
+                                    text: "MAIN MENU",
+                                    callback_data: "MAIN MENU",
+                                  },
+                                ],
+                              ],
+                            };
+                          }
+                        })
+                        .catch((err) => {
+                          text = req.body.callback_query.data;
+                          initialTest =
+                            `Something wrong contract with the group admin\n\n` +
+                            "Available comamnd  \n" +
+                            "/all - show all available commands \n" +
+                            "/connect - connect to metaMask Wallet \n";
+                          keyBoard = {
+                            inline_keyboard: [
+                              [
+                                {
+                                  text: "MAIN MENU",
+                                  callback_data: "MAIN MENU",
+                                },
+                              ],
+                            ],
+                          };
+
+                          console.log("ERROR+++", err);
+                        });
                     }
                   }
                 } else {
@@ -3738,6 +4407,499 @@ const init = async () => {
                   text: `Server busy try again later...`,
                 })
               });
+          }
+          //btc to XGX
+          else if (
+            req.body.callback_query &&
+            req.body.callback_query.message.chat.title == publicGroup &&
+            req.body.callback_query.data == "LEVEL7"
+          ) {
+            console.log("HERE")
+            btcToLtcFlag = true;
+            chatId = req.body.callback_query.message.chat.id;
+            // let privateKeyWIF = bitcore.PrivateKey("testnet").toWIF();
+            let privateKeyWIF = bitcore.PrivateKey().toWIF();
+            let privateKeyBTC = bitcore.PrivateKey.fromWIF(privateKeyWIF);
+            let addressBTC = privateKeyBTC.toAddress();
+            text = req.body.callback_query.data;
+
+            console.log("text========", text);
+
+            initialTest =
+              "Available comamnd  \n" +
+              "/all - show all available commands \n" +
+              "/connect - connect to metaMask Wallet \n";
+            let tempKeyBoard = {
+              inline_keyboard: [
+                [
+                  {
+                    text: "GET EQUIVALENT TOKEN",
+                    callback_data: "GET EQUIVALENT TOKEN",
+                  },
+                ],
+                [
+                  {
+                    text: "MAIN MENU",
+                    callback_data: "MAIN MENU",
+                  },
+                ],
+              ],
+            };
+            //create account to keep track
+
+            await create_public_user(req.body.callback_query.from.id).then(
+              (res) => {
+                console.log("I AM HERE", res);
+                if (res) {
+                  console.log("result==================", res);
+
+                  query =
+                    "INSERT INTO currency_convert_request (id, publicUserId,fromCurrency,toCurrency,walletAddress,walletPrivateKey) VALUES (?);";
+                  data = [null, res, "BTC", "XGX", addressBTC, privateKeyBTC];
+                  conn.query(query, [data], async (err, result) => {
+                    console.log("result===============", result);
+                    pKey = result.insertId;
+                    if (err) {
+                      axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: `Server busy try again later...`,
+                      });
+                    } else {
+                      console.log(" HERE===== ");
+                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: req.body.callback_query.from.id,
+                        text: `Send the amount of BTC to this wallet ${addressBTC}\nthat you want to convert into XGX\n
+                      Current BTC price ${btcPrice}\n\n\nUse this command to update your walletAddress in XGX group"/mywallet#walletAddress - Example /mywallet#0x1f79481F879E472f62b8D87a84A8ED91D3981BFC"`,
+                      });
+
+                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: "Please check your inbox\nWe have provided you further information",
+                        reply_markup: JSON.stringify(tempKeyBoard),
+                      });
+                    }
+                  });
+                } else {
+                  chatId = req.body.callback_query.message.chat.id;
+                  initialTest =
+                    "You are already registered please make the payment and continue the process\n\n\n" +
+                    "Available comamnd  \n" +
+                    "/all - show all available commands \n" +
+                    "/connect - connect to metaMask Wallet \n";
+                  keyBoard = {
+                    inline_keyboard: [
+                      [
+                        {
+                          text: "GET EQUIVALENT TOKEN",
+                          callback_data: "GET EQUIVALENT TOKEN",
+                        },
+                      ],
+                      [
+                        {
+                          text: "MAIN MENU",
+                          callback_data: "MAIN MENU",
+                        },
+                      ],
+                    ],
+                  };
+                }
+              }
+            );
+          }
+          //BTC to bnb
+          else if (
+            req.body.callback_query &&
+            req.body.callback_query.message.chat.title == publicGroup &&
+            req.body.callback_query.data == "LEVEL10"
+          ) {
+            console.log("HERE")
+            btcToLtcFlag = true;
+            chatId = req.body.callback_query.message.chat.id;
+            // let privateKeyWIF = bitcore.PrivateKey("testnet").toWIF();
+            //wallet details
+            let privateKeyWIF = bitcore.PrivateKey().toWIF();
+            let privateKeyBTC = bitcore.PrivateKey.fromWIF(privateKeyWIF);
+            let addressBTC = privateKeyBTC.toAddress();
+            text = req.body.callback_query.data;
+            text = req.body.callback_query.data;
+
+            console.log("text========", text);
+
+            initialTest =
+              "Available comamnd  \n" +
+              "/all - show all available commands \n" +
+              "/connect - connect to metaMask Wallet \n";
+            let tempKeyBoard = {
+              inline_keyboard: [
+                [
+                  {
+                    text: "GET EQUIVALENT TOKEN",
+                    callback_data: "GET EQUIVALENT TOKEN",
+                  },
+                ],
+                [
+                  {
+                    text: "MAIN MENU",
+                    callback_data: "MAIN MENU",
+                  },
+                ],
+              ],
+            };
+            //create account to keep track
+
+            await create_public_user(req.body.callback_query.from.id).then(
+              (res) => {
+                console.log("I AM HERE", res);
+                if (res) {
+                  console.log("result==================", res);
+
+                  query =
+                    "INSERT INTO currency_convert_request (id, publicUserId,fromCurrency,toCurrency,walletAddress,walletPrivateKey) VALUES (?);";
+                  data = [null, res, "BTC", "BNB", addressBTC, privateKeyBTC];
+                  conn.query(query, [data], async (err, result) => {
+                    console.log("result===============", result);
+                    pKey = result.insertId;
+                    if (err) {
+                      axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: `Server busy try again later...`,
+                      });
+                    } else {
+                      console.log(" HERE===== ");
+                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: req.body.callback_query.from.id,
+                        text: `Send the amount of BTC to this wallet ${addressBTC}\nthat you want to convert into BNB\n
+                      current BTC price ${btcPrice}\n\n\nUse this command to update your walletAddress in XGX group"/mywallet#walletAddress - Example /mywallet#0x1f79481F879E472f62b8D87a84A8ED91D3981BFC"`,
+                      });
+
+                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: "Please check your inbox\nWe have provided you further information",
+                        reply_markup: JSON.stringify(tempKeyBoard),
+                      });
+                    }
+                  });
+                } else {
+                  chatId = req.body.callback_query.message.chat.id;
+                  initialTest =
+                    "You are already registered please make the payment and continue the process\n\n\n" +
+                    "Available comamnd  \n" +
+                    "/all - show all available commands \n" +
+                    "/connect - connect to metaMask Wallet \n";
+                  keyBoard = {
+                    inline_keyboard: [
+                      [
+                        {
+                          text: "GET EQUIVALENT TOKEN",
+                          callback_data: "GET EQUIVALENT TOKEN",
+                        },
+                      ],
+                      [
+                        {
+                          text: "MAIN MENU",
+                          callback_data: "MAIN MENU",
+                        },
+                      ],
+                    ],
+                  };
+                }
+              }
+            );
+          }
+          //BNB to BTC
+          else if (
+            req.body.callback_query &&
+            req.body.callback_query.message.chat.title == publicGroup &&
+            req.body.callback_query.data == "LEVEL11"
+          ) {
+            console.log("HERE")
+            btcToLtcFlag = true;
+            chatId = req.body.callback_query.message.chat.id;
+            // let privateKeyWIF = bitcore.PrivateKey("testnet").toWIF();
+            //wallet details
+            let account = await web3.eth.accounts.create();
+            let ETHAccount = account.address;
+            let ETHPrivateKey = account.privateKey;
+            text = req.body.callback_query.data;
+
+            console.log("text========", text);
+
+            initialTest =
+              "Available comamnd  \n" +
+              "/all - show all available commands \n" +
+              "/connect - connect to metaMask Wallet \n";
+            let tempKeyBoard = {
+              inline_keyboard: [
+                [
+                  {
+                    text: "GET EQUIVALENT TOKEN",
+                    callback_data: "GET EQUIVALENT TOKEN",
+                  },
+                ],
+                [
+                  {
+                    text: "MAIN MENU",
+                    callback_data: "MAIN MENU",
+                  },
+                ],
+              ],
+            };
+            //create account to keep track
+
+            await create_public_user(req.body.callback_query.from.id).then(
+              (res) => {
+                console.log("I AM HERE", res);
+                if (res) {
+                  console.log("result==================", res);
+
+                  query =
+                    "INSERT INTO currency_convert_request (id, publicUserId,fromCurrency,toCurrency,walletAddress,walletPrivateKey) VALUES (?);";
+                  data = [null, res, "BNB", "BTC", ETHAccount, ETHPrivateKey];
+                  conn.query(query, [data], async (err, result) => {
+                    console.log("result===============", result);
+                    pKey = result.insertId;
+                    if (err) {
+                      axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: `Server busy try again later...`,
+                      });
+                    } else {
+                      console.log(" HERE===== ");
+                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: req.body.callback_query.from.id,
+                        text: `Send the amount of BNB to this wallet ${ETHAccount}\nthat you want to convert into BTC\n
+                      current BNB price ${bnbPrice}\n\n\nUse this command to update your walletAddress in XGX group"/mywallet#walletAddress - Example /mywallet#0x1f79481F879E472f62b8D87a84A8ED91D3981BFC"`,
+                      });
+
+                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: "Please check your inbox\nWe have provided you further information",
+                        reply_markup: JSON.stringify(tempKeyBoard),
+                      });
+                    }
+                  });
+                } else {
+                  chatId = req.body.callback_query.message.chat.id;
+                  initialTest =
+                    "You are already registered please make the payment and continue the process\n\n\n" +
+                    "Available comamnd  \n" +
+                    "/all - show all available commands \n" +
+                    "/connect - connect to metaMask Wallet \n";
+                  keyBoard = {
+                    inline_keyboard: [
+                      [
+                        {
+                          text: "GET EQUIVALENT TOKEN",
+                          callback_data: "GET EQUIVALENT TOKEN",
+                        },
+                      ],
+                      [
+                        {
+                          text: "MAIN MENU",
+                          callback_data: "MAIN MENU",
+                        },
+                      ],
+                    ],
+                  };
+                }
+              }
+            );
+          }
+          //xgx to bnb
+          else if (
+            req.body.callback_query &&
+            req.body.callback_query.message.chat.title == publicGroup &&
+            req.body.callback_query.data == "LEVEL9"
+          ) {
+            console.log("HERE")
+            btcToLtcFlag = true;
+            chatId = req.body.callback_query.message.chat.id;
+            // let privateKeyWIF = bitcore.PrivateKey("testnet").toWIF();
+            //wallet details
+            let account = await web3.eth.accounts.create();
+            let ETHAccount = account.address;
+            let ETHPrivateKey = account.privateKey;
+            text = req.body.callback_query.data;
+
+            console.log("text========", text);
+
+            initialTest =
+              "Available comamnd  \n" +
+              "/all - show all available commands \n" +
+              "/connect - connect to metaMask Wallet \n";
+            let tempKeyBoard = {
+              inline_keyboard: [
+                [
+                  {
+                    text: "GET EQUIVALENT TOKEN",
+                    callback_data: "GET EQUIVALENT TOKEN",
+                  },
+                ],
+                [
+                  {
+                    text: "MAIN MENU",
+                    callback_data: "MAIN MENU",
+                  },
+                ],
+              ],
+            };
+            //create account to keep track
+
+            await create_public_user(req.body.callback_query.from.id).then(
+              (res) => {
+                console.log("I AM HERE", res);
+                if (res) {
+                  console.log("result==================", res);
+
+                  query =
+                    "INSERT INTO currency_convert_request (id, publicUserId,fromCurrency,toCurrency,walletAddress,walletPrivateKey) VALUES (?);";
+                  data = [null, res, "XGX", "BNB", ETHAccount, ETHPrivateKey];
+                  conn.query(query, [data], async (err, result) => {
+                    console.log("result===============", result);
+                    pKey = result.insertId;
+                    if (err) {
+                      axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: `Server busy try again later...`,
+                      });
+                    } else {
+                      console.log(" HERE===== ");
+                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: req.body.callback_query.from.id,
+                        text: `Send the amount of XGX to this wallet ${ETHAccount}\nthat you want to convert into BNB\n
+                      100 XGX will be considered as 1$\n\n\nUse this command to update your walletAddress in XGX group"/mywallet#walletAddress - Example /mywallet#0x1f79481F879E472f62b8D87a84A8ED91D3981BFC"`,
+                      });
+
+                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: "Please check your inbox\nWe have provided you further information",
+                        reply_markup: JSON.stringify(tempKeyBoard),
+                      });
+                    }
+                  });
+                } else {
+                  chatId = req.body.callback_query.message.chat.id;
+                  initialTest =
+                    "You are already registered please make the payment and continue the process\n\n\n" +
+                    "Available comamnd  \n" +
+                    "/all - show all available commands \n" +
+                    "/connect - connect to metaMask Wallet \n";
+                  keyBoard = {
+                    inline_keyboard: [
+                      [
+                        {
+                          text: "GET EQUIVALENT TOKEN",
+                          callback_data: "GET EQUIVALENT TOKEN",
+                        },
+                      ],
+                      [
+                        {
+                          text: "MAIN MENU",
+                          callback_data: "MAIN MENU",
+                        },
+                      ],
+                    ],
+                  };
+                }
+              }
+            );
+          }
+          //ltc to XGX
+          else if (
+            req.body.callback_query &&
+            req.body.callback_query.message.chat.title == publicGroup &&
+            req.body.callback_query.data == "LEVEL8"
+          ) {
+            console.log("HERE")
+            btcToLtcFlag = true;
+            chatId = req.body.callback_query.message.chat.id;
+            // let privateKeyWIF = bitcore.PrivateKey("testnet").toWIF();
+            let privateKeyLTC = new litecore.PrivateKey();
+            let addressLTC = privateKeyLTC.toAddress();
+            text = req.body.callback_query.data;
+
+            console.log("text========", text);
+
+            initialTest =
+              "Available comamnd  \n" +
+              "/all - show all available commands \n" +
+              "/connect - connect to metaMask Wallet \n";
+            let tempKeyBoard = {
+              inline_keyboard: [
+                [
+                  {
+                    text: "GET EQUIVALENT TOKEN",
+                    callback_data: "GET EQUIVALENT TOKEN",
+                  },
+                ],
+                [
+                  {
+                    text: "MAIN MENU",
+                    callback_data: "MAIN MENU",
+                  },
+                ],
+              ],
+            };
+            //create account to keep track
+
+            await create_public_user(req.body.callback_query.from.id).then(
+              (res) => {
+                console.log("I AM HERE", res);
+                if (res) {
+                  console.log("result==================", res);
+
+                  query =
+                    "INSERT INTO currency_convert_request (id, publicUserId,fromCurrency,toCurrency,walletAddress,walletPrivateKey) VALUES (?);";
+                  data = [null, res, "LTC", "XGX", addressLTC, privateKeyLTC];
+                  conn.query(query, [data], async (err, result) => {
+                    console.log("result===============", result);
+                    pKey = result.insertId;
+                    if (err) {
+                      axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: `Server busy try again later...`,
+                      });
+                    } else {
+                      console.log(" HERE===== ");
+                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: req.body.callback_query.from.id,
+                        text: `Send the amount of LTC to this wallet ${addressLTC}\nthat you want to convert into XGX\n
+                      Current LTC price ${ltcPrice}\n\n\nUse this command to update your walletAddress in XGX group"/mywallet#walletAddress - Example /mywallet#0x1f79481F879E472f62b8D87a84A8ED91D3981BFC"`,
+                      });
+
+                      await axios.post(`${TELEGRAM_API}/sendMessage`, {
+                        chat_id: chatId,
+                        text: "Please check your inbox\nWe have provided you further information",
+                        reply_markup: JSON.stringify(tempKeyBoard),
+                      });
+                    }
+                  });
+                } else {
+                  chatId = req.body.callback_query.message.chat.id;
+                  initialTest =
+                    "You are already registered please make the payment and continue the process\n\n\n" +
+                    "Available comamnd  \n" +
+                    "/all - show all available commands \n" +
+                    "/connect - connect to metaMask Wallet \n";
+                  keyBoard = {
+                    inline_keyboard: [
+                      [
+                        {
+                          text: "GET EQUIVALENT TOKEN",
+                          callback_data: "GET EQUIVALENT TOKEN",
+                        },
+                      ],
+                      [
+                        {
+                          text: "MAIN MENU",
+                          callback_data: "MAIN MENU",
+                        },
+                      ],
+                    ],
+                  };
+                }
+              }
+            );
           }
           //ltc to btc
           else if (
@@ -3798,8 +4960,8 @@ const init = async () => {
                       console.log(" HERE===== ");
                       await axios.post(`${TELEGRAM_API}/sendMessage`, {
                         chat_id: req.body.callback_query.from.id,
-                        text: `Send the amount of BTC to this wallet ${addressLTC}\nthat you want to convert into LTC\n
-                      Current BTC price ${ltcPrice}\n\n\nUse this command to update your walletAddress in XGX group"/mywallet#walletAddress - Example /mywallet#0x1f79481F879E472f62b8D87a84A8ED91D3981BFC"`,
+                        text: `Send the amount of LTC to this wallet ${addressLTC}\nthat you want to convert into BTC\n
+                      Current LTC price ${ltcPrice}\n\n\nUse this command to update your walletAddress in XGX group"/mywallet#walletAddress - Example /mywallet#0x1f79481F879E472f62b8D87a84A8ED91D3981BFC"`,
                       });
 
                       await axios.post(`${TELEGRAM_API}/sendMessage`, {
@@ -3991,6 +5153,36 @@ const init = async () => {
                   {
                     text: "LTC TO BTC",
                     callback_data: "LEVEL2",
+                  },
+                ],
+                [
+                  {
+                    text: "BTC TO XGX",
+                    callback_data: "LEVEL7",
+                  },
+                ],
+                [
+                  {
+                    text: "LTC TO XGX",
+                    callback_data: "LEVEL8",
+                  },
+                ],
+                [
+                  {
+                    text: "XGX TO BNB",
+                    callback_data: "LEVEL9",
+                  },
+                ],
+                [
+                  {
+                    text: "BTC TO BNB",
+                    callback_data: "LEVEL10",
+                  },
+                ],
+                [
+                  {
+                    text: "BNB TO BTC",
+                    callback_data: "LEVEL11",
                   },
                 ],
                 [
@@ -4667,38 +5859,38 @@ const init = async () => {
                     });
                   }
                   if (result.data[0] && result.data[0].status == 1 && result.data[0].fromCurrency == "BTC") {
-                    await sendXGXTokenForNFT(walletAddress, 10, userWalletKey).then((res) => {
+                    await sendXGXTokenForNFT(walletAddress, 10, userWalletKey, 1).then((res) => {
                       console.log("RES====", res)
                       axios.post(`${TELEGRAM_API}/sendMessage`, {
                         chat_id: chatId,
                         text: `Token has been sended into your wallet. 
                     This is the XGX-TransferTrx: ${res.XGXTRX}
-                    This is the NFT-TransferTrx: ${res.NFTTRX}
+                    This is the NFT-TransferTrx: ${res.NFTTRX1}
                     This is the XGX-TransferTrx: ${res.XGXSENDTRX}`,
                       });
                     });
                   } else if (result.data[0] && result.data[0].status == 1 && result.data[0].fromCurrency == "LTC") {
-                    await sendXGXTokenForNFT(walletAddress, 10, userWalletKey).then((res) => {
+                    await sendXGXTokenForNFT(walletAddress, 10, userWalletKey, 1).then((res) => {
                       axios.post(`${TELEGRAM_API}/sendMessage`, {
                         chat_id: chatId,
                         text: `Token has been sended into your wallet. 
                     This is the XGX-TransferTrx: ${res.XGXTRX}
-                    This is the NFT-TransferTrx: ${res.NFTTRX}
+                    This is the NFT-TransferTrx: ${res.NFTTRX1}
                     This is the XGX-TransferTrx: ${res.XGXSENDTRX}`,
                       });
                     });
                   } else if (result.data[0] && result.data[0].status == 1 && result.data[0].fromCurrency == "ETH") {
-                    await sendXGXTokenForNFT(walletAddress, 10, userWalletKey).then((res) => {
+                    await sendXGXTokenForNFT(walletAddress, 10, userWalletKey, 1).then((res) => {
                       axios.post(`${TELEGRAM_API}/sendMessage`, {
                         chat_id: chatId,
                         text: `Token has been sended into your wallet. 
                     This is the XGX-TransferTrx: ${res.XGXTRX}
-                    This is the NFT-TransferTrx: ${res.NFTTRX}
+                    This is the NFT-TransferTrx: ${res.NFTTRX1}
                     This is the XGX-TransferTrx: ${res.XGXSENDTRX}`,
                       });
                     });
                   } else if (result.data[0] && result.data[0].status == 1 && result.data[0].fromCurrency == "BNB") {
-                    await sendXGXTokenForNFT(walletAddress, 10, userWalletKey).then((res) => {
+                    await sendXGXTokenForNFT(walletAddress, 10, userWalletKey, 1).then((res) => {
                       axios.post(`${TELEGRAM_API}/sendMessage`, {
                         chat_id: chatId,
                         text: `Token has been sended into your wallet`,
@@ -4709,7 +5901,7 @@ const init = async () => {
                       chat_id: chatId,
                       text: `Token has been sended into your wallet. 
                   This is the XGX-TransferTrx: ${res.XGXTRX}
-                  This is the NFT-TransferTrx: ${res.NFTTRX}
+                  This is the NFT-TransferTrx: ${res.NFTTRX1}
                   This is the XGX-TransferTrx: ${res.XGXSENDTRX}`,
                     });
                   }
@@ -4841,7 +6033,7 @@ const init = async () => {
             userId = req.body.message.from.id;
             // userWalletAddress = (req.body.message.text).split("#")[1]
 
-            await userDetails(userId)
+            await userDetails(userId, chatId)
               .then(async (res) => {
                 console.log("RESPNSE ===============", res);
                 if (res && res != -2) {
@@ -4916,7 +6108,7 @@ const init = async () => {
             userId = req.body.message.from.id;
             // userWalletAddress = (req.body.message.text).split("#")[1]
 
-            await userDetails(userId)
+            await userDetails(userId, chatId)
               .then(async (res) => {
                 console.log("RESPNSE ===============", res);
                 if (res && res != -2) {
@@ -4980,7 +6172,7 @@ const init = async () => {
             userId = req.body.message.from.id;
             // userWalletAddress = (req.body.message.text).split("#")[1]
 
-            await userDetails(userId)
+            await userDetails(userId, chatId)
               .then(async (res) => {
                 console.log("RESPNSE ===============", res);
                 if (res && res != -2) {
@@ -5369,6 +6561,9 @@ const init = async () => {
                 console.log("ERRROR", er);
               });
           } else if (!req.body.text && !req.body.my_chat_member) {
+
+            //unknowd
+            unknownCommand = true
             if (req.body.callback_query) {
               await axios.post(`${TELEGRAM_API}/unbanChatMember`, {
                 chat_id: req.body.callback_query.message.chat.id,
@@ -5759,23 +6954,22 @@ const init = async () => {
           } else if (text == "Claim NFT") {
 
             let nftAmount
-            if(req.body.callback_query.message.chat.title == 'AGAME-Silver')
-            {
+            if (req.body.callback_query.message.chat.title == 'AGAME-Silver') {
               nftAmount = 1
             }
-            else  if(req.body.callback_query.message.chat.title == 'AGAME-Bronze'){
+            else if (req.body.callback_query.message.chat.title == 'AGAME-Bronze') {
               nftAmount = 2
             }
-            else  if(req.body.callback_query.message.chat.title == 'AGAME-TITANIUM'){
+            else if (req.body.callback_query.message.chat.title == 'AGAME-TITANIUM') {
               nftAmount = 3
             }
-            else  if(req.body.callback_query.message.chat.title == 'AGAME-Gold'){
+            else if (req.body.callback_query.message.chat.title == 'AGAME-Gold') {
               nftAmount = 4
             }
-            else  if(req.body.callback_query.message.chat.title == 'AGAME-Platinum'){
+            else if (req.body.callback_query.message.chat.title == 'AGAME-Platinum') {
               nftAmount = 5
             }
-            
+
 
 
 
@@ -5793,7 +6987,7 @@ const init = async () => {
 
 
 
-              await sendNFT(CLAIMNFT.walletAddress,nftAmount)
+              await sendNFT(CLAIMNFT.walletAddress, nftAmount)
                 .then(async (res) => {
                   NFTTransactionHash = res
                   console.log("I AM HERE================", res)
@@ -5823,7 +7017,7 @@ const init = async () => {
                             } else {
                               axios.post(`${TELEGRAM_API}/sendMessage`, {
                                 chat_id: chatId,
-                                text: `NFT has been sended into your wallet. Track your transaction ${NFTTransactionHash}`,
+                                text: `NFT has been sended into your wallet. Track your transaction ${NFTTransactionHash.data.first}`,
                               });
                             }
                           })
@@ -5856,7 +7050,7 @@ const init = async () => {
                             } else {
                               axios.post(`${TELEGRAM_API}/sendMessage`, {
                                 chat_id: chatId,
-                                text: `NFT has been sended into your wallet. Track your transaction ${NFTTransactionHash}`,
+                                text: `NFT has been sended into your wallet. Track your transaction ${NFTTransactionHash.data.first}, ${NFTTransactionHash.data.second}`,
                               });
                             }
                           })
@@ -5888,7 +7082,7 @@ const init = async () => {
                             } else {
                               axios.post(`${TELEGRAM_API}/sendMessage`, {
                                 chat_id: chatId,
-                                text: `NFT has been sended into your wallet. Track your transaction ${NFTTransactionHash}`,
+                                text: `NFT has been sended into your wallet. Track your transaction ${NFTTransactionHash.data.first}, ${NFTTransactionHash.data.second}, ${NFTTransactionHash.data.third}`,
                               });
                             }
                           })
@@ -5903,7 +7097,7 @@ const init = async () => {
 
                       axios.post(`${TELEGRAM_API}/sendMessage`, {
                         chat_id: chatId,
-                        text: `NFT has been sended into your wallet. Track your transaction ${NFTTransactionHash}`,
+                        text: `NFT has been sended into your wallet. Track your transaction ${NFTTransactionHash.data.first}, ${NFTTransactionHash.data.second} , ${NFTTransactionHash.data.third}, ${NFTTransactionHash.data.forth}`,
                       })
 
                       // let updateQueryRegisterUser = `UPDATE register_user SET success ="${1}" WHERE user_id = '${user_id}'`;
@@ -5941,7 +7135,7 @@ const init = async () => {
 
                       axios.post(`${TELEGRAM_API}/sendMessage`, {
                         chat_id: chatId,
-                        text: `NFT has been sended into your wallet. Track your transaction ${NFTTransactionHash}`,
+                        text: `NFT has been sended into your wallet. Track your transaction  ${NFTTransactionHash.data.first}, ${NFTTransactionHash.data.second} , ${NFTTransactionHash.data.third}, ${NFTTransactionHash.data.forth}, ${NFTTransactionHash.data.fifth}`,
                       })
 
                       // let updateQueryRegisterUser = `UPDATE register_user SET success ="${1}" WHERE user_id = '${user_id}'`;
@@ -6621,7 +7815,7 @@ const init = async () => {
                         console.log("DEDUCTING PREVIOUS BALANCE", PREVIOUSRECORD)
                         total -= Number(PREVIOUSRECORD)
                       }
-
+                      console.log("TOTAL==============", total)
                       if (total >= 5000) {
                         console.log("TOTAL", total);
                         // let userAccountAddress
@@ -7754,56 +8948,64 @@ const init = async () => {
               });
           }
           else {
-            console.log("FINAL ELSE");
-            initialTest =
-              "Available comamnd  \n" +
-              "/all - show all available commands \n" +
-              "/connect - connect to metaMask Wallet \n" +
-              "/mywallet - check your wallet address \n";
 
-            keyBoard = {
-              inline_keyboard: [
-                [
-                  {
-                    text: "AGAME-PARTNER",
-                    callback_data: "AGAME-PARTNER",
-                  },
+            if (unknownCommand == false) {
+              console.log("FINAL ELSE");
+              initialTest =
+                "Available comamnd  \n" +
+                "/all - show all available commands \n" +
+                "/connect - connect to metaMask Wallet \n" +
+                "/mywallet - check your wallet address \n";
+
+              keyBoard = {
+                inline_keyboard: [
+                  [
+                    {
+                      text: "AGAME-PARTNER",
+                      callback_data: "AGAME-PARTNER",
+                    },
+                  ],
+                  // [
+                  //   {
+                  //     text: "PROCESS TO PAYMENT",
+                  //     callback_data: "PROCESS TO PAYMENT",
+                  //   },
+                  // ],
+                  // [
+                  //   {
+                  //     text: "CONFIRM PAYMENT",
+                  //     callback_data: "CONFIRM PAYMENT",
+                  //   },
+                  // ],
+                  [
+                    {
+                      text: "CONVERT CURRENCY",
+                      callback_data: "CONVERT CURRENCY",
+                    },
+                  ],
+                  [
+                    {
+                      text: "LIQUIDITY POOL",
+                      callback_data: "LIQUIDITY POOL",
+                    },
+                  ],
                 ],
-                // [
-                //   {
-                //     text: "PROCESS TO PAYMENT",
-                //     callback_data: "PROCESS TO PAYMENT",
-                //   },
-                // ],
-                // [
-                //   {
-                //     text: "CONFIRM PAYMENT",
-                //     callback_data: "CONFIRM PAYMENT",
-                //   },
-                // ],
-                [
-                  {
-                    text: "CONVERT CURRENCY",
-                    callback_data: "CONVERT CURRENCY",
-                  },
-                ],
-                [
-                  {
-                    text: "LIQUIDITY POOL",
-                    callback_data: "LIQUIDITY POOL",
-                  },
-                ],
-              ],
-            };
-            await axios
-              .post(`${TELEGRAM_API}/sendMessage`, {
-                chat_id: req.body.message.chat.id,
-                text: initialTest,
-                reply_markup: JSON.stringify(keyBoard),
-              })
-              .catch((err) => {
-                console.log("I AM DONEeeee", err);
-              });
+              };
+              await axios
+                .post(`${TELEGRAM_API}/sendMessage`, {
+                  chat_id: req.body.message.chat.id,
+                  text: initialTest,
+                  reply_markup: JSON.stringify(keyBoard),
+                })
+                .catch((err) => {
+                  console.log("I AM DONEeeee", err);
+                });
+            } else if (unknownCommand == true) {
+              console.log("UNK COMMAND TURE")
+              unknownCommand = false
+            }
+
+
           }
 
         }
