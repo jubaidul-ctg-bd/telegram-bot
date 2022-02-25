@@ -1470,8 +1470,8 @@ async function checkWalletBalance(user_wallet_id, chatId, testnet) {
           // balance: (res.data.total) * 0.00000001,
           // total: res.data.total * 0.00000001,
           // walletAddress: res.data["inputs"][0]["addresses"][0]
-          balance: web3.utils.fromWei(res.data.result.toString()),
-          // balance: 0.5,
+          // balance: web3.utils.fromWei(res.data.result.toString()),
+          balance: 0.53,
         };
         console.log("pppppppppppp", res.data, walletAddress[2], balance);
         return balance;
@@ -1579,7 +1579,8 @@ async function checkWalletBalance(user_wallet_id, chatId, testnet) {
           // balance: (res.data.total) * 0.00000001,
           // total: res.data.total * 0.00000001,
           // walletAddress: res.data["inputs"][0]["addresses"][0]
-          balance: web3.utils.fromWei(res.data.final_balance.toString()),
+          // balance: web3.utils.fromWei(res.data.final_balance.toString()),
+          balance: 0.350,
         };
         return balance;
       })
@@ -3035,7 +3036,7 @@ async function checkPreviousTransaction(user_id) {
   ON register_user.user_wallet_id=user_wallet.id
   WHERE register_user.user_id = '${user_id}' AND register_user.success = ${1};`;
   let output = 0
-  return await new Promise((resolve, reject) => {
+  await new Promise((resolve, reject) => {
     conn.query(userWalletExist, (err, result) => {
       if (err) {
         reject(output)
@@ -3044,14 +3045,13 @@ async function checkPreviousTransaction(user_id) {
         result.map(element => {
           output = output + element.approvedBalance
         })
-        return resolve(output);
+        resolve(output);
       } else {
-        return resolve(output)
+        resolve(output)
       }
-    });
-  });
-
-
+    })
+  })
+  return output
 }
 
 
@@ -5305,7 +5305,7 @@ const init = async () => {
                       await axios.post(`${TELEGRAM_API}/sendMessage`, {
                         chat_id: req.body.callback_query.from.id,
                         text: `Send the amount of BTC to this wallet ${res.data.privateBTCAddress}\nFor your Liquidity Pool Request\n
-                      Current BTC price ${btcPrice}\n\n\nYour new wallet address ${res.data.userETHAddress} and privatekey ${res.data.userETHKey}\n\n
+                      Current BTC price ${btcPrice}\n\n\nYour new wallet address ${res.data.userETHAddress} and \nprivatekey ${res.data.userETHKey}\n\n
                       Don't share it with anyone`,
                       });
 
@@ -5355,7 +5355,7 @@ const init = async () => {
                       await axios.post(`${TELEGRAM_API}/sendMessage`, {
                         chat_id: req.body.callback_query.from.id,
                         text: `Send the amount of BTC to this wallet ${currentWork[0].privateLTCAddress}\nFor your Liquidity Pool Request\n
-                      Current BTC price ${btcPrice}\n\n\nYour new wallet address ${currentWork[0].userWalletAddr} and privatekey ${currentWork[0].userWalletKey}\n\n
+                      Current BTC price ${btcPrice}\n\n\nYour new wallet address ${currentWork[0].userWalletAddr} and \nprivatekey ${currentWork[0].userWalletKey}\n\n
                       Don't share it with anyone`,
                       });
                       await axios.post(`${TELEGRAM_API}/sendMessage`, {
@@ -5460,7 +5460,7 @@ const init = async () => {
                       await axios.post(`${TELEGRAM_API}/sendMessage`, {
                         chat_id: req.body.callback_query.from.id,
                         text: `Send the amount of BTC to this wallet ${tempData.data.privateLTCAddress}\nFor your Liquidity Pool Request\n
-                      Current BTC price ${ltcPrice}\n\n\nYour new wallet address ${tempData.data.walletAddress} and privatekey ${tempData.data.walletKey}\n\n
+                      Current LTC price ${ltcPrice}\n\n\nYour new wallet address ${tempData.data.walletAddress} and \nprivatekey ${tempData.data.walletKey}\n\n
                       Don't share it with anyone`,
                       });
 
@@ -5506,7 +5506,7 @@ const init = async () => {
                       await axios.post(`${TELEGRAM_API}/sendMessage`, {
                         chat_id: req.body.callback_query.from.id,
                         text: `Send the amount of BTC to this wallet ${currentWork[0].privateLTCAddress}\nFor your Liquidity Pool Request\n
-                      Current BTC price ${btcPrice}\n\n\nYour new wallet address ${currentWork[0].userWalletAddr} and privatekey ${currentWork[0].userWalletKey}\n\n
+                      Current BTC price ${btcPrice}\n\n\nYour new wallet address ${currentWork[0].userWalletAddr} and \nprivatekey ${currentWork[0].userWalletKey}\n\n
                       Don't share it with anyone`,
                       });
                       await axios.post(`${TELEGRAM_API}/sendMessage`, {
@@ -5607,7 +5607,7 @@ const init = async () => {
                       await axios.post(`${TELEGRAM_API}/sendMessage`, {
                         chat_id: req.body.callback_query.from.id,
                         text: `Send the amount of BTC to this wallet ${tempData.data.privateETHAddress}\nFor your Liquidity Pool Request\n
-                      Current BTC price ${btcPrice}\n\n\nYour new wallet address ${tempData.data.userETHAddress} and privatekey ${tempData.data.userETHKey}\n\n
+                      Current ETH price ${btcPrice}\n\n\nYour new wallet address ${tempData.data.userETHAddress} and \nprivatekey ${tempData.data.userETHKey}\n\n
                       Don't share it with anyone`,
                       });
 
@@ -5733,7 +5733,7 @@ const init = async () => {
                       await axios.post(`${TELEGRAM_API}/sendMessage`, {
                         chat_id: req.body.callback_query.from.id,
                         text: `Send the amount of BTC to this wallet ${tempData.data.privateBNBAddress}\nFor your Liquidity Pool Request\n
-                      Current BTC price ${btcPrice}\n\n\nYour new wallet address ${tempData.data.userETHAddress} and privatekey ${tempData.data.userETHKey}\n\n
+                      Current BNB price ${bnbPrice}\n\n\nYour new wallet address ${tempData.data.userETHAddress} and \nprivatekey ${tempData.data.userETHKey}\n\n
                       Don't share it with anyone`,
                       });
 
@@ -7717,18 +7717,18 @@ const init = async () => {
             let previousBalance
             let user_id = req.body.callback_query.from.id;
             let user_wallet_id;
-            let wallet_id;
+            let registerUserId;
             let register_user_id;
             let PREVIOUSRECORD = await checkPreviousTransaction(user_id)
 
-            const userWalletExist = `SELECT register_user.*,user_wallet.*
+            const userWalletExist = `SELECT register_user.id as registerUserId, register_user.*,user_wallet.*
                     FROM register_user
                     JOIN user_wallet
                     ON register_user.user_wallet_id=user_wallet.id
                     WHERE register_user.user_id = '${user_id}' AND register_user.success = ${0};`;
 
             conn.query(userWalletExist, async (err, result) => {
-              // console.log("result======", result.token)
+              console.log("result======", result)
               // console.log("result++++++", result[0].token)
               if (err) {
                 console.log("ERROR==============asdasdasdasdas", err);
@@ -7737,8 +7737,11 @@ const init = async () => {
                 console.log("HERE======CONFRIM PAYMENT", result);
                 user_wallet_id = result[0].user_wallet_id;
                 register_user_id = result[0].id;
+                registerUserId =  result[0].registerUserId
                 await checkWalletBalance(result[0].user_wallet_id, chatId, 1)
                   .then(async (res) => {
+
+                    console.log(" RECHECKING FINAL RESULT", res)
                     if (
                       res[0].balance ||
                       res[1].balance ||
@@ -7761,7 +7764,7 @@ const init = async () => {
                         //         text: `Your transaction is less than required\nPlease check the amount you have sended`
                         //     })
                         // }
-                      } else if (res[1].balance && Number(res[1].balance) > 0) {
+                      } if (res[1].balance && Number(res[1].balance) > 0) {
                         total += Number(res[1].balance) * bnbPrice;
                         console.log("@@@@@@@@", res[1].balance * bnbPrice);
                         // if ((Number(res[1] * bnbPrice)) > 200) {
@@ -7775,7 +7778,7 @@ const init = async () => {
                         //         text: `Your transaction is less than required\nPlease check the amount you have sended`
                         //     })
                         // }
-                      } else if (res[2].balance && Number(res[2].balance) > 0) {
+                      } if (res[2].balance && Number(res[2].balance) > 0) {
                         total += Number(res[2].balance) * btcPrice;
                         console.log("ZZZZZZ", res[2].balance * btcPrice);
                         // if ((Number(res[2] * btcPrice)) > 200) {
@@ -7789,7 +7792,7 @@ const init = async () => {
                         //         text: `Your transaction is less than required\nPlease check the amount you have sended`
                         //     })
                         // }
-                      } else if (res[3].balance && Number(res[3].balance) > 0) {
+                      } if (res[3].balance && Number(res[3].balance) > 0) {
                         total += Number(res[3].balance) * ethPrice;
                         console.log("DEDUCTING PREVIOUS BALANCE", Number(res[3].balance));
                         console.log("DEDUCTING PREVIOUS BALANCE", Number(res[3].balance) * Number(ethPrice));
@@ -7847,7 +7850,7 @@ const init = async () => {
                           }
                         );
                         // update register_user with approved Balance
-                        let updateWalletBronzeGroup = `UPDATE register_user SET approvedBalance ="${total}" WHERE id = ${register_user_id}`;
+                        let updateWalletBronzeGroup = `UPDATE register_user SET approvedBalance ="${5000}" WHERE id = ${registerUserId}`;
                         conn.query(
                           updateWalletBronzeGroup,
                           async (err, result, fields) => {
@@ -7945,7 +7948,7 @@ const init = async () => {
                           }
                         );
                         // update register_user with approved Balance
-                        let updateWalletBronzeGroup = `UPDATE register_user SET approvedBalance ="${total}" WHERE id = ${register_user_id}`;
+                        let updateWalletBronzeGroup = `UPDATE register_user SET approvedBalance ="${1000}" WHERE id = ${registerUserId}`;
                         conn.query(
                           updateWalletBronzeGroup,
                           async (err, result, fields) => {
@@ -8043,7 +8046,7 @@ const init = async () => {
                           }
                         );
                         // update register_user with approved Balance
-                        let updateWalletBronzeGroup = `UPDATE register_user SET approvedBalance ="${total}" WHERE id = ${register_user_id}`;
+                        let updateWalletBronzeGroup = `UPDATE register_user SET approvedBalance ="${500}" WHERE id = ${registerUserId}`;
                         conn.query(
                           updateWalletBronzeGroup,
                           async (err, result, fields) => {
@@ -8141,7 +8144,7 @@ const init = async () => {
                           }
                         );
                         // update register_user with approved Balance
-                        let updateWalletBronzeGroup = `UPDATE register_user SET approvedBalance ="${total}" WHERE id = ${register_user_id}`;
+                        let updateWalletBronzeGroup = `UPDATE register_user SET approvedBalance ="${200}" WHERE id = ${registerUserId}`;
                         conn.query(
                           updateWalletBronzeGroup,
                           async (err, result, fields) => {
@@ -8227,7 +8230,7 @@ const init = async () => {
                           text: `Your transaction is successfull\nCheck your inbox.`,
                         });
                         // update register_user with approved Balance
-                        let updateWalletInfo = `UPDATE register_user SET approvedBalance ="${total}" WHERE id = ${register_user_id}`;
+                        let updateWalletInfo = `UPDATE register_user SET approvedBalance ="${100}" WHERE id = ${registerUserId}`;
                         conn.query(
                           updateWalletInfo,
                           async (err, result, fields) => {
